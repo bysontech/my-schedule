@@ -1,11 +1,15 @@
-# Decisions (Lightweight ADR)
+## 選択テンプレ
+- B
 
-Record notable decisions to reduce back-and-forth.
+## 選択理由
+- 本プロジェクトは「自分用のタスク管理・進捗管理」を最短で日常運用に乗せるのが目的で、初期段階ではSEO・認証・クラウドDB・APIが不要。
+- タスクのCRUD、複数分類、繰り返し生成、フィルタ/ソート、簡易グラフなど“動的UI”が中心のため、Reactでの状態管理・UI構築が最も効率的。
+- PWA化により、ホーム追加・オフライン起動・ローカル永続化ができ、運用コストをほぼゼロに抑えつつ「毎日開く」体験を作れる。
+- 将来、同期/認証/DBが必要になった場合でも、フロントを維持したままバックエンド（Workers/APIやDB）を段階的に追加しやすい。
 
-## Template
-- Date:
-- Decision:
-- Context:
-- Options considered:
-- Rationale:
-- Consequences:
+## 判断基準
+- SEO要否：不要（個人用アプリで検索流入を狙わない）
+- 認証要否：不要（MVPは自分専用・端末内で完結）
+- DB要否：不要（MVPはIndexedDB等のローカル永続化で足りる）
+- Workers/API要否：不要（MVPはサーバ処理・同期なしで成立）
+- 想定運用コスト上限：0〜数百円/月（実質0円運用を前提）
