@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react'
-import { db } from './db'
+import { Outlet, Link, useLocation } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
-  const [dbStatus, setDbStatus] = useState<string>('checking...')
-
-  useEffect(() => {
-    db.open()
-      .then(() => setDbStatus('IndexedDB ready'))
-      .catch((err) => setDbStatus(`IndexedDB error: ${err.message}`))
-  }, [])
+export default function App() {
+  const location = useLocation();
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Template B PWA</h1>
-      <p>Client-only PWA with IndexedDB (Dexie)</p>
-      <div style={{ marginTop: '1rem' }}>
-        <button onClick={() => setCount((c) => c + 1)}>
-          Count: {count}
-        </button>
-      </div>
-      <p style={{ marginTop: '1rem', color: '#666' }}>
-        DB Status: {dbStatus}
-      </p>
+    <div style={{ padding: "1rem 2rem", fontFamily: "system-ui, sans-serif", maxWidth: 900, margin: "0 auto" }}>
+      <header style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.5rem", marginBottom: "1rem" }}>
+        <h1 style={{ margin: 0, fontSize: "1.4rem" }}>My Schedule</h1>
+        <nav style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
+          <Link
+            to="/tasks"
+            style={{ fontWeight: location.pathname === "/tasks" ? "bold" : "normal" }}
+          >
+            タスク一覧
+          </Link>
+          <Link
+            to="/tasks/new"
+            style={{ fontWeight: location.pathname === "/tasks/new" ? "bold" : "normal" }}
+          >
+            新規作成
+          </Link>
+        </nav>
+      </header>
+      <main>
+        <Outlet />
+      </main>
     </div>
-  )
+  );
 }
-
-export default App
