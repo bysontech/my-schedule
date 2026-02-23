@@ -80,153 +80,128 @@ export function TasksPage() {
     load();
   };
 
+  const dueBucket = (task: Task) => getDueBucket(task.dueDate);
+
   return (
     <div>
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-        <label>
-          状態:
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="filter-item">
+          <span className="filter-label">状態</span>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as TaskStatus | "all")}
-            style={{ marginLeft: 4 }}
           >
             <option value="all">すべて</option>
             {(["todo", "in_progress", "done"] as const).map((s) => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label>
-          優先度:
+        <div className="filter-item">
+          <span className="filter-label">優先度</span>
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "all")}
-            style={{ marginLeft: 4 }}
           >
             <option value="all">すべて</option>
             {(["high", "med", "low"] as const).map((p) => (
               <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label>
-          期限:
+        <div className="filter-item">
+          <span className="filter-label">期限</span>
           <select
             value={filterDueBucket}
             onChange={(e) => setFilterDueBucket(e.target.value as DueBucket | "all")}
-            style={{ marginLeft: 4 }}
           >
             <option value="all">すべて</option>
             {(["overdue", "today", "thisWeek", "thisMonth"] as const).map((b) => (
               <option key={b} value={b}>{DUE_BUCKET_LABELS[b]}</option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label>
-          ソート:
+        <div className="filter-item">
+          <span className="filter-label">ソート</span>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            style={{ marginLeft: 4 }}
           >
             <option value="dueDate">期限昇順</option>
             <option value="priority">優先度降順</option>
             <option value="updatedAt">更新日降順</option>
           </select>
-        </label>
+        </div>
       </div>
 
-      {sorted.length === 0 && (
-        <p style={{ color: "#888" }}>タスクがありません</p>
-      )}
-
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        {sorted.length > 0 && (
-          <thead>
-            <tr>
-              <th style={thStyle}>完了</th>
-              <th style={{ ...thStyle, textAlign: "left" }}>タイトル</th>
-              <th style={thStyle}>期限</th>
-              <th style={thStyle}>優先度</th>
-              <th style={thStyle}>状態</th>
-              <th style={thStyle}>操作</th>
-            </tr>
-          </thead>
-        )}
-        <tbody>
-          {sorted.map((task) => (
-            <tr
-              key={task.id}
-              style={{
-                opacity: task.status === "done" ? 0.6 : 1,
-                borderBottom: "1px solid #e0e0e0",
-              }}
-            >
-              <td style={{ ...tdStyle, textAlign: "center" }}>
+      {/* Task list */}
+      {sorted.length === 0 ? (
+        <div className="empty-state">
+          <p>タスクがありません</p>
+          <button onClick={() => navigate("/tasks/new")} style={{ marginTop: "0.75rem" }}>
+            + 最初のタスクを作成
+          </button>
+        </div>
+      ) : (
+        <div className="task-list">
+          {sorted.map((task) => {
+            const bucket = dueBucket(task);
+            const isDone = task.status === "done";
+            return (
+              <div
+                key={task.id}
+                className={`task-card ${isDone ? "task-card--done" : ""}`}
+              >
                 <input
                   type="checkbox"
-                  checked={task.status === "done"}
+                  className="task-checkbox"
+                  checked={isDone}
                   onChange={() => handleToggleDone(task.id)}
                 />
-              </td>
-              <td
-                style={{
-                  ...tdStyle,
-                  textDecoration: task.status === "done" ? "line-through" : "none",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate(`/tasks/${task.id}/edit`)}
-              >
-                {task.title}
-              </td>
-              <td style={{ ...tdStyle, textAlign: "center" }}>
-                {task.dueDate ?? "-"}
-                {task.dueDate && getDueBucket(task.dueDate) === "overdue" && (
-                  <span style={{ color: "red", marginLeft: 4 }}>!</span>
-                )}
-              </td>
-              <td style={{ ...tdStyle, textAlign: "center" }}>
-                {PRIORITY_LABELS[task.priority]}
-              </td>
-              <td style={{ ...tdStyle, textAlign: "center" }}>
-                {STATUS_LABELS[task.status]}
-              </td>
-              <td style={{ ...tdStyle, textAlign: "center" }}>
-                <button
-                  onClick={() => navigate(`/tasks/${task.id}/edit`)}
-                  style={{ fontSize: "0.85em", padding: "0.3em 0.6em", marginRight: 4 }}
-                >
-                  編集
-                </button>
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  style={{
-                    fontSize: "0.85em",
-                    padding: "0.3em 0.6em",
-                    background: "#c0392b",
-                    color: "#fff",
-                  }}
-                >
-                  削除
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+                <div className="task-body" onClick={() => navigate(`/tasks/${task.id}/edit`)}>
+                  <p className={`task-title ${isDone ? "task-title--done" : ""}`}>
+                    {task.title}
+                  </p>
+                  <div className="task-meta">
+                    <span className={`badge badge-priority-${task.priority}`}>
+                      {PRIORITY_LABELS[task.priority]}
+                    </span>
+                    <span className="badge badge-status">
+                      {STATUS_LABELS[task.status]}
+                    </span>
+                    {task.dueDate && (
+                      <span className={`badge badge-due ${bucket === "overdue" ? "badge-overdue" : ""}`}>
+                        {task.dueDate}
+                        {bucket ? ` (${DUE_BUCKET_LABELS[bucket]})` : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="task-actions">
+                  <button
+                    className="btn-sm btn-ghost"
+                    onClick={() => navigate(`/tasks/${task.id}/edit`)}
+                  >
+                    編集
+                  </button>
+                  <button
+                    className="btn-sm btn-danger"
+                    onClick={() => handleDelete(task.id)}
+                  >
+                    削除
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: "0.5rem",
-  borderBottom: "2px solid #ccc",
-  whiteSpace: "nowrap",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "0.5rem",
-};
