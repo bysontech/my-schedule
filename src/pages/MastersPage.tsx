@@ -6,14 +6,15 @@ import { listBuckets, upsertBucket, deleteBucket } from "../db/bucketsRepo";
 
 // ── Groups ──────────────────────────────────────────────────
 
-function GroupsSection() {
-  const [groups, setGroups] = useState<Group[]>([]);
+type GroupsSectionProps = {
+  groups: Group[];
+  onGroupsUpdated: () => void;
+};
+
+function GroupsSection({ groups, onGroupsUpdated }: GroupsSectionProps) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-
-  const load = () => listGroups().then(setGroups);
-  useEffect(() => { load(); }, []);
 
   const handleAdd = async () => {
     const name = newName.trim();
@@ -21,7 +22,7 @@ function GroupsSection() {
     const now = new Date().toISOString();
     await upsertGroup({ id: crypto.randomUUID(), name, createdAt: now });
     setNewName("");
-    load();
+    onGroupsUpdated();
   };
 
   const handleRename = async (g: Group) => {
@@ -30,12 +31,12 @@ function GroupsSection() {
       await upsertGroup({ ...g, name });
     }
     setEditingId(null);
-    load();
+    onGroupsUpdated();
   };
 
   const handleDelete = async (id: string) => {
     await deleteGroup(id);
-    load();
+    onGroupsUpdated();
   };
 
   return (
@@ -49,7 +50,12 @@ function GroupsSection() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="グループ名"
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
         />
         <button onClick={handleAdd} className="btn-sm">追加</button>
       </div>
@@ -66,7 +72,10 @@ function GroupsSection() {
                   autoFocus
                   onChange={(e) => setEditingName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleRename(g);
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      handleRename(g);
+                    }
                     if (e.key === "Escape") setEditingId(null);
                   }}
                   onBlur={() => handleRename(g)}
@@ -91,19 +100,19 @@ function GroupsSection() {
 
 // ── Projects ──────────────────────────────────────────────────
 
-function ProjectsSection() {
+type ProjectsSectionProps = {
+  groups: Group[];
+};
+
+function ProjectsSection({ groups }: ProjectsSectionProps) {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [newName, setNewName] = useState("");
   const [newGroupId, setNewGroupId] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
 
-  const load = () => {
-    listProjects().then(setProjects);
-    listGroups().then(setGroups);
-  };
-  useEffect(() => { load(); }, []);
+  const loadProjects = () => listProjects().then(setProjects);
+  useEffect(() => { loadProjects(); }, []);
 
   const handleAdd = async () => {
     const name = newName.trim();
@@ -117,7 +126,7 @@ function ProjectsSection() {
     });
     setNewName("");
     setNewGroupId("");
-    load();
+    loadProjects();
   };
 
   const handleRename = async (p: Project) => {
@@ -126,12 +135,12 @@ function ProjectsSection() {
       await upsertProject({ ...p, name });
     }
     setEditingId(null);
-    load();
+    loadProjects();
   };
 
   const handleDelete = async (id: string) => {
     await deleteProject(id);
-    load();
+    loadProjects();
   };
 
   const groupName = (gid: string | null) =>
@@ -148,7 +157,12 @@ function ProjectsSection() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="プロジェクト名"
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
         />
         <select value={newGroupId} onChange={(e) => setNewGroupId(e.target.value)}>
           <option value="">グループなし</option>
@@ -170,7 +184,10 @@ function ProjectsSection() {
                 autoFocus
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRename(p);
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    handleRename(p);
+                  }
                   if (e.key === "Escape") setEditingId(null);
                 }}
                 onBlur={() => handleRename(p)}
@@ -240,7 +257,12 @@ function BucketsSection() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="分類名"
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
         />
         <button onClick={handleAdd} className="btn-sm">追加</button>
       </div>
@@ -256,7 +278,10 @@ function BucketsSection() {
                 autoFocus
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRename(b);
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    handleRename(b);
+                  }
                   if (e.key === "Escape") setEditingId(null);
                 }}
                 onBlur={() => handleRename(b)}
@@ -281,10 +306,14 @@ function BucketsSection() {
 // ── Page ──────────────────────────────────────────────────
 
 export function MastersPage() {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const loadGroups = () => listGroups().then(setGroups);
+  useEffect(() => { loadGroups(); }, []);
+
   return (
     <div className="masters-page">
-      <GroupsSection />
-      <ProjectsSection />
+      <GroupsSection groups={groups} onGroupsUpdated={loadGroups} />
+      <ProjectsSection groups={groups} />
       <BucketsSection />
     </div>
   );
