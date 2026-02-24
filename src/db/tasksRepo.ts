@@ -2,7 +2,7 @@ import { db } from "./indexedDb";
 import type { Task } from "../domain/task";
 
 export async function listTasks(): Promise<Task[]> {
-  return db.tasks.where("isDeleted").equals(0).toArray();
+  return db.tasks.filter((task) => !task.isDeleted).toArray();
 }
 
 export async function getTask(id: string): Promise<Task | undefined> {
