@@ -5,6 +5,7 @@ import {
 import App from "./App";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
+import { MastersPage } from "./pages/MastersPage";
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       { path: "/tasks", element: <TasksPage /> },
       { path: "/tasks/new", element: <TaskFormPage /> },
       { path: "/tasks/:id/edit", element: <TaskFormPage /> },
+      { path: "/masters", element: <MastersPage /> },
     ],
   },
 ]);

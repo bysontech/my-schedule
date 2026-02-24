@@ -448,9 +448,165 @@ textarea {
   margin-top: 1.75rem;
 }
 
+/* ── Masters page ── */
+.masters-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.masters-section {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.masters-section-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--c-border-light);
+  background: var(--c-surface-hover);
+}
+
+.masters-section-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.masters-add-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--c-border-light);
+}
+
+.masters-add-form input[type="text"] {
+  flex: 1;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.masters-add-form select {
+  padding: 0.45rem 1.8rem 0.45rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.masters-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.master-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--c-border-light);
+  transition: background var(--transition);
+}
+
+.master-item:last-child {
+  border-bottom: none;
+}
+
+.master-item:hover {
+  background: var(--c-surface-hover);
+}
+
+.master-item-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--c-text);
+  cursor: pointer;
+}
+
+.master-item-name:hover {
+  color: var(--c-primary);
+}
+
+.master-item-sub {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  margin-left: 0.4rem;
+}
+
+.master-item-edit {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.master-empty {
+  padding: 1.25rem 1rem;
+  text-align: center;
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Bucket checkboxes ── */
+.bucket-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.bucket-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--c-surface-hover);
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--c-text-secondary);
+}
+
+.bucket-check-label:hover {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+.bucket-check-label--checked {
+  background: var(--c-primary-light);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+.bucket-check-label input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+/* ── Classification badges on task cards ── */
+.badge-master {
+  background: #e9d8fd;
+  color: #553c9a;
+}
+
+.badge-bucket {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge-master { background: #44337a; color: #d6bcfa; }
+  .badge-bucket { background: #064e3b; color: #6ee7b7; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .app-container { padding: 0 1rem 1.5rem; }
   .task-card { grid-template-columns: auto 1fr; gap: 0.5rem; }
   .task-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .masters-add-form { flex-wrap: wrap; }
 }

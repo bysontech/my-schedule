@@ -4,6 +4,10 @@ import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import { priorityOrder } from "../domain/task";
 import { listTasks, toggleDone, softDeleteTask } from "../db/tasksRepo";
 import { getDueBucket, DUE_BUCKET_LABELS, type DueBucket } from "../utils/dateBuckets";
+import type { Group, Project, Bucket } from "../domain/master";
+import { listGroups } from "../db/groupsRepo";
+import { listProjects } from "../db/projectsRepo";
+import { listBuckets } from "../db/bucketsRepo";
 
 type SortKey = "dueDate" | "priority" | "updatedAt";
 
@@ -22,13 +26,23 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 export function TasksPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [buckets, setBuckets] = useState<Bucket[]>([]);
+
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "all">("all");
   const [filterDueBucket, setFilterDueBucket] = useState<DueBucket | "all">("all");
+  const [filterGroupId, setFilterGroupId] = useState<string>("all");
+  const [filterProjectId, setFilterProjectId] = useState<string>("all");
+  const [filterBucketId, setFilterBucketId] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("dueDate");
 
   const load = () => {
     listTasks().then(setTasks);
+    listGroups().then(setGroups);
+    listProjects().then(setProjects);
+    listBuckets().then(setBuckets);
   };
 
   useEffect(() => {
@@ -46,8 +60,17 @@ export function TasksPage() {
     if (filterDueBucket !== "all") {
       result = result.filter((t) => getDueBucket(t.dueDate) === filterDueBucket);
     }
+    if (filterGroupId !== "all") {
+      result = result.filter((t) => t.groupId === filterGroupId);
+    }
+    if (filterProjectId !== "all") {
+      result = result.filter((t) => t.projectId === filterProjectId);
+    }
+    if (filterBucketId !== "all") {
+      result = result.filter((t) => t.bucketIds.includes(filterBucketId));
+    }
     return result;
-  }, [tasks, filterStatus, filterPriority, filterDueBucket]);
+  }, [tasks, filterStatus, filterPriority, filterDueBucket, filterGroupId, filterProjectId, filterBucketId]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -80,7 +103,9 @@ export function TasksPage() {
     load();
   };
 
-  const dueBucket = (task: Task) => getDueBucket(task.dueDate);
+  const groupName = (gid: string | null) => groups.find((g) => g.id === gid)?.name;
+  const projectName = (pid: string | null) => projects.find((p) => p.id === pid)?.name;
+  const bucketName = (bid: string) => buckets.find((b) => b.id === bid)?.name ?? bid;
 
   return (
     <div>
@@ -125,6 +150,57 @@ export function TasksPage() {
           </select>
         </div>
 
+        {groups.length > 0 && (
+          <div className="filter-item">
+            <span className="filter-label">グループ</span>
+            <select
+              value={filterGroupId}
+              onChange={(e) => {
+                setFilterGroupId(e.target.value);
+                setFilterProjectId("all"); // グループ変更でリセット
+              }}
+            >
+              <option value="all">すべて</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {projects.length > 0 && (
+          <div className="filter-item">
+            <span className="filter-label">プロジェクト</span>
+            <select
+              value={filterProjectId}
+              onChange={(e) => setFilterProjectId(e.target.value)}
+            >
+              <option value="all">すべて</option>
+              {(filterGroupId !== "all"
+                ? projects.filter((p) => p.groupId === filterGroupId)
+                : projects
+              ).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {buckets.length > 0 && (
+          <div className="filter-item">
+            <span className="filter-label">Bucket</span>
+            <select
+              value={filterBucketId}
+              onChange={(e) => setFilterBucketId(e.target.value)}
+            >
+              <option value="all">すべて</option>
+              {buckets.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="filter-item">
           <span className="filter-label">ソート</span>
           <select
@@ -149,7 +225,7 @@ export function TasksPage() {
       ) : (
         <div className="task-list">
           {sorted.map((task) => {
-            const bucket = dueBucket(task);
+            const bucket = getDueBucket(task.dueDate);
             const isDone = task.status === "done";
             return (
               <div
@@ -180,6 +256,15 @@ export function TasksPage() {
                         {bucket ? ` (${DUE_BUCKET_LABELS[bucket]})` : ""}
                       </span>
                     )}
+                    {task.groupId && groupName(task.groupId) && (
+                      <span className="badge badge-master">{groupName(task.groupId)}</span>
+                    )}
+                    {task.projectId && projectName(task.projectId) && (
+                      <span className="badge badge-master">{projectName(task.projectId)}</span>
+                    )}
+                    {task.bucketIds.map((bid) => (
+                      <span key={bid} className="badge badge-bucket">{bucketName(bid)}</span>
+                    ))}
                   </div>
                 </div>
 

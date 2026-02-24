@@ -16,6 +16,12 @@ export default function App() {
               Tasks
             </Link>
             <Link
+              to="/masters"
+              className={`nav-link ${pathname === "/masters" ? "nav-link--active" : ""}`}
+            >
+              Masters
+            </Link>
+            <Link
               to="/tasks/new"
               className={`nav-link ${pathname === "/tasks/new" ? "nav-link--active" : ""}`}
             >

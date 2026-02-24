@@ -3,6 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import { createEmptyTask } from "../domain/task";
 import { getTask, upsertTask } from "../db/tasksRepo";
+import type { Group, Project, Bucket } from "../domain/master";
+import { listGroups } from "../db/groupsRepo";
+import { listProjects } from "../db/projectsRepo";
+import { listBuckets } from "../db/bucketsRepo";
 
 export function TaskFormPage() {
   const navigate = useNavigate();
@@ -14,10 +18,20 @@ export function TaskFormPage() {
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("med");
   const [status, setStatus] = useState<TaskStatus>("todo");
+  const [groupId, setGroupId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("");
+  const [bucketIds, setBucketIds] = useState<string[]>([]);
   const [titleError, setTitleError] = useState(false);
   const [existingTask, setExistingTask] = useState<Task | null>(null);
 
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [buckets, setBuckets] = useState<Bucket[]>([]);
+
   useEffect(() => {
+    listGroups().then(setGroups);
+    listProjects().then(setProjects);
+    listBuckets().then(setBuckets);
     if (id) {
       getTask(id).then((task) => {
         if (task) {
@@ -27,10 +41,24 @@ export function TaskFormPage() {
           setDueDate(task.dueDate ?? "");
           setPriority(task.priority);
           setStatus(task.status);
+          setGroupId(task.groupId ?? "");
+          setProjectId(task.projectId ?? "");
+          setBucketIds(task.bucketIds);
         }
       });
     }
   }, [id]);
+
+  // プロジェクトをグループで絞り込む（groupId未選択時は全件）
+  const filteredProjects = groupId
+    ? projects.filter((p) => p.groupId === groupId)
+    : projects;
+
+  const toggleBucket = (bid: string) => {
+    setBucketIds((prev) =>
+      prev.includes(bid) ? prev.filter((b) => b !== bid) : [...prev, bid]
+    );
+  };
 
   const handleSave = async () => {
     const trimmed = title.trim();
@@ -55,6 +83,9 @@ export function TaskFormPage() {
       dueDate: dueDate || null,
       priority,
       status,
+      groupId: groupId || null,
+      projectId: projectId || null,
+      bucketIds,
       updatedAt: now,
     };
 
@@ -115,6 +146,63 @@ export function TaskFormPage() {
           <option value="done">完了</option>
         </select>
       </div>
+
+      {groups.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">グループ</label>
+          <select
+            value={groupId}
+            onChange={(e) => {
+              setGroupId(e.target.value);
+              setProjectId(""); // グループ変更でプロジェクトリセット
+            }}
+          >
+            <option value="">なし</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {projects.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">プロジェクト</label>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
+            <option value="">なし</option>
+            {filteredProjects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {buckets.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">自由分類 (Bucket)</label>
+          <div className="bucket-checks">
+            {buckets.map((b) => {
+              const checked = bucketIds.includes(b.id);
+              return (
+                <label
+                  key={b.id}
+                  className={`bucket-check-label ${checked ? "bucket-check-label--checked" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleBucket(b.id)}
+                  />
+                  {b.name}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="form-group">
         <label className="form-label">メモ</label>
