@@ -10,11 +10,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.svg', 'robots.txt'],
       manifest: {
-        name: 'Template B PWA',
-        short_name: 'TemplateB',
-        description: 'Client-only PWA template with IndexedDB',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        name: 'My Schedule',
+        short_name: 'MySchedule',
+        description: 'Personal task management PWA',
+        theme_color: '#5b6abf',
+        background_color: '#f8f9fc',
+        start_url: '/',
         display: 'standalone',
         icons: [
           {
