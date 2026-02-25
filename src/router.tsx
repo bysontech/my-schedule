@@ -6,6 +6,7 @@ import App from "./App";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
 import { MastersPage } from "./pages/MastersPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
       { path: "/tasks/new", element: <TaskFormPage /> },
       { path: "/tasks/:id/edit", element: <TaskFormPage /> },
       { path: "/masters", element: <MastersPage /> },
+      { path: "/settings", element: <SettingsPage /> },
     ],
   },
 ]);

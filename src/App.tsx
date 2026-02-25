@@ -22,6 +22,12 @@ export default function App() {
               Masters
             </Link>
             <Link
+              to="/settings"
+              className={`nav-link ${pathname === "/settings" ? "nav-link--active" : ""}`}
+            >
+              Settings
+            </Link>
+            <Link
               to="/tasks/new"
               className={`nav-link ${pathname === "/tasks/new" ? "nav-link--active" : ""}`}
             >
