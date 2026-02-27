@@ -10,6 +10,12 @@ export default function App() {
           <h1 className="app-title">My Schedule</h1>
           <nav className="app-nav">
             <Link
+              to="/dashboard"
+              className={`nav-link ${pathname === "/dashboard" ? "nav-link--active" : ""}`}
+            >
+              Home
+            </Link>
+            <Link
               to="/tasks"
               className={`nav-link ${pathname === "/tasks" ? "nav-link--active" : ""}`}
             >

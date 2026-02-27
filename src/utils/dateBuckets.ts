@@ -15,7 +15,10 @@ export function getDueBucket(dueDate: string | null): DueBucket | null {
   if (due.getTime() === today.getTime()) return "today";
 
   const endOfWeek = new Date(today);
-  endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+  // 月曜開始: 日曜(0)→0, 月(1)→6, 火(2)→5, ... 土(6)→1
+  const dayOfWeek = today.getDay();
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+  endOfWeek.setDate(today.getDate() + daysUntilSunday);
   if (due <= endOfWeek) return "thisWeek";
 
   const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
