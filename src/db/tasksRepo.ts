@@ -23,6 +23,16 @@ export async function toggleDone(id: string): Promise<void> {
   });
 }
 
+export async function toggleStatus(id: string): Promise<void> {
+  const task = await db.tasks.get(id);
+  if (!task) return;
+  const newStatus = task.status === "todo" ? "in_progress" : "todo";
+  await db.tasks.update(id, {
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function softDeleteTask(id: string): Promise<void> {
   await db.tasks.update(id, {
     isDeleted: true,
