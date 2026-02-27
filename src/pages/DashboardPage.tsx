@@ -1,149 +1,170 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "../domain/task";
+import type { Group } from "../domain/master";
 import { listTasks } from "../db/tasksRepo";
+import { listGroups } from "../db/groupsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
-import { aggregateCounts, getQuickList } from "../utils/taskAggregations";
-import { DUE_BUCKET_LABELS } from "../utils/dateBuckets";
-
-const PRIORITY_LABELS = { high: "High", med: "Med", low: "Low" } as const;
-const STATUS_LABELS = { todo: "未着手", in_progress: "進行中", done: "完了" } as const;
+import {
+  computeStrategySummary,
+  computeDangerCounts,
+  computeGroupProgress,
+} from "../utils/taskAggregations";
+import { priorityIcon } from "../utils/priorityIcon";
+import { getDueBucket } from "../utils/dateBuckets";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
     ensureNextInstanceForAllActiveTemplates().then(() => {
       listTasks().then(setTasks);
+      listGroups().then(setGroups);
     });
   }, []);
 
-  const agg = useMemo(() => aggregateCounts(tasks), [tasks]);
-  const overdueList = useMemo(() => getQuickList(tasks, "overdue", 10), [tasks]);
-  const todayList = useMemo(() => getQuickList(tasks, "today", 10), [tasks]);
+  const strategy = useMemo(() => computeStrategySummary(tasks), [tasks]);
+  const danger = useMemo(() => computeDangerCounts(tasks), [tasks]);
+  const groupProgress = useMemo(() => computeGroupProgress(tasks, groups), [tasks, groups]);
 
-  const goFiltered = (params: Record<string, string>) => {
-    const qs = new URLSearchParams(params).toString();
-    navigate(`/tasks?${qs}`);
-  };
+  const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
+
+  // Quick list: overdue + today (not done), max 5 each
+  const quickOverdue = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.status !== "done" && getDueBucket(t.dueDate) === "overdue")
+        .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+        .slice(0, 5),
+    [tasks],
+  );
+  const quickToday = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.status !== "done" && getDueBucket(t.dueDate) === "today")
+        .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+        .slice(0, 5),
+    [tasks],
+  );
 
   return (
     <div className="dashboard">
-      {/* 期限別 */}
+      {/* ── 上段: 戦略サマリー ── */}
       <section className="dash-section">
-        <h2 className="dash-section-title">期限別</h2>
+        <h2 className="dash-section-title">戦略サマリー</h2>
         <div className="dash-cards">
-          {(["overdue", "today", "thisWeek", "thisMonth"] as const).map((key) => (
-            <button
-              key={key}
-              className={`dash-card ${key === "overdue" && agg.dueCounts.overdue > 0 ? "dash-card--alert" : ""}`}
-              onClick={() => goFiltered({ due: key })}
-            >
-              <span className="dash-card-count">{agg.dueCounts[key]}</span>
-              <span className="dash-card-label">{DUE_BUCKET_LABELS[key]}</span>
-            </button>
-          ))}
+          <div className="dash-stat">
+            <span className="dash-stat-value">{strategy.total}</span>
+            <span className="dash-stat-label">総タスク</span>
+          </div>
+          <div className="dash-stat">
+            <span className="dash-stat-value">{strategy.inProgress}</span>
+            <span className="dash-stat-label">進行中</span>
+          </div>
+          <div className="dash-stat">
+            <span className="dash-stat-value">{strategy.completionRate}%</span>
+            <span className="dash-stat-sub">{strategy.done} / {strategy.total}</span>
+            <span className="dash-stat-label">完了率</span>
+          </div>
+          <div className="dash-stat">
+            <span className="dash-stat-value">{strategy.thisWeekRate}%</span>
+            <span className="dash-stat-sub">{strategy.thisWeekDone} / {strategy.thisWeekTotal}</span>
+            <span className="dash-stat-label">今週達成率</span>
+          </div>
         </div>
       </section>
 
-      {/* 状態別 */}
+      {/* ── 中段: 危険ゾーン ── */}
       <section className="dash-section">
-        <h2 className="dash-section-title">状態別</h2>
-        <div className="dash-cards">
-          {(["todo", "in_progress", "done"] as const).map((key) => (
-            <button
-              key={key}
-              className="dash-card"
-              onClick={() => goFiltered({ status: key })}
-            >
-              <span className="dash-card-count">{agg.statusCounts[key]}</span>
-              <span className="dash-card-label">{STATUS_LABELS[key]}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* 優先度別 */}
-      <section className="dash-section">
-        <h2 className="dash-section-title">優先度別</h2>
-        <div className="dash-cards">
-          {(["high", "med", "low"] as const).map((key) => (
-            <button
-              key={key}
-              className="dash-card"
-              onClick={() => goFiltered({ priority: key })}
-            >
-              <span className="dash-card-count">{agg.priorityCounts[key]}</span>
-              <span className="dash-card-label">{PRIORITY_LABELS[key]}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* クイック一覧: 期限切れ */}
-      <QuickSection
-        title="期限切れ"
-        tasks={overdueList}
-        onClickTask={(id) => navigate(`/tasks/${id}/edit`)}
-        onShowAll={() => goFiltered({ due: "overdue" })}
-        alert
-      />
-
-      {/* クイック一覧: 今日 */}
-      <QuickSection
-        title="今日のタスク"
-        tasks={todayList}
-        onClickTask={(id) => navigate(`/tasks/${id}/edit`)}
-        onShowAll={() => goFiltered({ due: "today" })}
-      />
-    </div>
-  );
-}
-
-function QuickSection({
-  title,
-  tasks,
-  onClickTask,
-  onShowAll,
-  alert,
-}: {
-  title: string;
-  tasks: Task[];
-  onClickTask: (id: string) => void;
-  onShowAll: () => void;
-  alert?: boolean;
-}) {
-  if (tasks.length === 0) return null;
-
-  return (
-    <section className="dash-section">
-      <div className="dash-quick-header">
-        <h2 className={`dash-section-title ${alert ? "dash-section-title--alert" : ""}`}>
-          {title}
-          <span className="dash-quick-count">{tasks.length}</span>
+        <h2 className={`dash-section-title ${dangerTotal > 0 ? "dash-section-title--alert" : ""}`}>
+          危険ゾーン
         </h2>
-        <button className="btn-sm btn-ghost" onClick={onShowAll}>
-          すべて表示
-        </button>
-      </div>
-      <div className="dash-quick-list">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="dash-quick-item"
-            onClick={() => onClickTask(task.id)}
+        <div className="dash-cards">
+          <button
+            className={`dash-card ${danger.overdue > 0 ? "dash-card--danger" : ""}`}
+            onClick={() => navigate("/focus")}
           >
-            <span className={`badge badge-priority-${task.priority} dash-quick-badge`}>
-              {PRIORITY_LABELS[task.priority]}
-            </span>
-            <span className="dash-quick-title">{task.title}</span>
-            {task.dueDate && (
-              <span className="dash-quick-due">{task.dueDate}</span>
+            <span className="dash-card-count">{danger.overdue}</span>
+            <span className="dash-card-label">期限切れ</span>
+          </button>
+          <button
+            className={`dash-card ${danger.today > 0 ? "dash-card--danger" : ""}`}
+            onClick={() => navigate("/focus")}
+          >
+            <span className="dash-card-count">{danger.today}</span>
+            <span className="dash-card-label">今日期限</span>
+          </button>
+          <button
+            className={`dash-card ${danger.thisWeekHigh > 0 ? "dash-card--caution" : ""}`}
+            onClick={() => navigate("/focus")}
+          >
+            <span className="dash-card-count">{danger.thisWeekHigh}</span>
+            <span className="dash-card-label">今週 High</span>
+          </button>
+        </div>
+
+        {/* Quick preview of overdue/today */}
+        {(quickOverdue.length > 0 || quickToday.length > 0) && (
+          <div className="dash-danger-preview">
+            {quickOverdue.length > 0 && (
+              <div className="dash-danger-group">
+                <span className="dash-danger-group-label dash-danger-group-label--danger">期限切れ</span>
+                {quickOverdue.map((t) => (
+                  <div key={t.id} className="dash-danger-item" onClick={() => navigate(`/tasks/${t.id}/edit`)}>
+                    <span className="dash-danger-icon">{priorityIcon(t.priority)}</span>
+                    <span className="dash-danger-title">{t.title}</span>
+                    <span className="dash-danger-due">{t.dueDate}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {quickToday.length > 0 && (
+              <div className="dash-danger-group">
+                <span className="dash-danger-group-label dash-danger-group-label--danger">今日</span>
+                {quickToday.map((t) => (
+                  <div key={t.id} className="dash-danger-item" onClick={() => navigate(`/tasks/${t.id}/edit`)}>
+                    <span className="dash-danger-icon">{priorityIcon(t.priority)}</span>
+                    <span className="dash-danger-title">{t.title}</span>
+                    <span className="dash-danger-due">{t.dueDate}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        ))}
-      </div>
-    </section>
+        )}
+      </section>
+
+      {/* ── 下段: 分野別進捗 ── */}
+      {groupProgress.length > 0 && (
+        <section className="dash-section">
+          <h2 className="dash-section-title">分野別進捗</h2>
+          <div className="dash-group-list">
+            {groupProgress.map((gp) => (
+              <button
+                key={gp.groupId ?? "__null__"}
+                className="dash-group-row"
+                onClick={() =>
+                  gp.groupId
+                    ? navigate(`/tasks?groupId=${gp.groupId}`)
+                    : navigate("/tasks")
+                }
+              >
+                <span className="dash-group-name">{gp.groupName}</span>
+                <span className="dash-group-bar-track">
+                  <span
+                    className="dash-group-bar-fill"
+                    style={{ width: `${gp.rate}%` }}
+                  />
+                </span>
+                <span className="dash-group-rate">{gp.rate}%</span>
+                <span className="dash-group-fraction">{gp.done}/{gp.total}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
