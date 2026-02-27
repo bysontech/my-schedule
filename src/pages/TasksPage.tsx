@@ -9,6 +9,7 @@ import { listGroups } from "../db/groupsRepo";
 import { listProjects } from "../db/projectsRepo";
 import { listBuckets } from "../db/bucketsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
+import { priorityIcon } from "../utils/priorityIcon";
 
 type SortKey = "dueDate" | "priority" | "updatedAt";
 
@@ -40,6 +41,8 @@ export function TasksPage() {
   const qPriority = searchParams.get("priority");
   const qDue = searchParams.get("due");
 
+  const hasQueryFilter = !!(qStatus || qPriority || qDue);
+
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">(
     qStatus && VALID_STATUSES.has(qStatus) ? (qStatus as TaskStatus) : "all",
   );
@@ -53,6 +56,9 @@ export function TasksPage() {
   const [filterProjectId, setFilterProjectId] = useState<string>("all");
   const [filterBucketId, setFilterBucketId] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("dueDate");
+
+  const [showFilter, setShowFilter] = useState(hasQueryFilter);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = () => {
     listTasks().then(setTasks);
@@ -123,102 +129,21 @@ export function TasksPage() {
   const projectName = (pid: string | null) => projects.find((p) => p.id === pid)?.name;
   const bucketName = (bid: string) => buckets.find((b) => b.id === bid)?.name ?? bid;
 
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div>
-      {/* Filter bar */}
-      <div className="filter-bar">
-        <div className="filter-item">
-          <span className="filter-label">状態</span>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as TaskStatus | "all")}
-          >
-            <option value="all">すべて</option>
-            {(["todo", "in_progress", "done"] as const).map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-item">
-          <span className="filter-label">優先度</span>
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "all")}
-          >
-            <option value="all">すべて</option>
-            {(["high", "med", "low"] as const).map((p) => (
-              <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-item">
-          <span className="filter-label">期限</span>
-          <select
-            value={filterDueBucket}
-            onChange={(e) => setFilterDueBucket(e.target.value as DueBucket | "all")}
-          >
-            <option value="all">すべて</option>
-            {(["overdue", "today", "thisWeek", "thisMonth"] as const).map((b) => (
-              <option key={b} value={b}>{DUE_BUCKET_LABELS[b]}</option>
-            ))}
-          </select>
-        </div>
-
-        {groups.length > 0 && (
-          <div className="filter-item">
-            <span className="filter-label">グループ</span>
-            <select
-              value={filterGroupId}
-              onChange={(e) => {
-                setFilterGroupId(e.target.value);
-                setFilterProjectId("all"); // グループ変更でリセット
-              }}
-            >
-              <option value="all">すべて</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {projects.length > 0 && (
-          <div className="filter-item">
-            <span className="filter-label">プロジェクト</span>
-            <select
-              value={filterProjectId}
-              onChange={(e) => setFilterProjectId(e.target.value)}
-            >
-              <option value="all">すべて</option>
-              {(filterGroupId !== "all"
-                ? projects.filter((p) => p.groupId === filterGroupId)
-                : projects
-              ).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {buckets.length > 0 && (
-          <div className="filter-item">
-            <span className="filter-label">Bucket</span>
-            <select
-              value={filterBucketId}
-              onChange={(e) => setFilterBucketId(e.target.value)}
-            >
-              <option value="all">すべて</option>
-              {buckets.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="filter-item">
-          <span className="filter-label">ソート</span>
+      {/* Filter toggle */}
+      <div className="planning-toolbar">
+        <button
+          className={`btn-sm ${showFilter ? "btn-secondary" : "btn-ghost"}`}
+          onClick={() => setShowFilter((v) => !v)}
+        >
+          {showFilter ? "フィルタを隠す" : "詳細フィルタ"}
+        </button>
+        <div className="filter-item" style={{ marginLeft: "auto" }}>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
@@ -229,6 +154,101 @@ export function TasksPage() {
           </select>
         </div>
       </div>
+
+      {/* Collapsible filter bar */}
+      {showFilter && (
+        <div className="filter-bar">
+          <div className="filter-item">
+            <span className="filter-label">状態</span>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as TaskStatus | "all")}
+            >
+              <option value="all">すべて</option>
+              {(["todo", "in_progress", "done"] as const).map((s) => (
+                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <span className="filter-label">優先度</span>
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "all")}
+            >
+              <option value="all">すべて</option>
+              {(["high", "med", "low"] as const).map((p) => (
+                <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <span className="filter-label">期限</span>
+            <select
+              value={filterDueBucket}
+              onChange={(e) => setFilterDueBucket(e.target.value as DueBucket | "all")}
+            >
+              <option value="all">すべて</option>
+              {(["overdue", "today", "thisWeek", "thisMonth"] as const).map((b) => (
+                <option key={b} value={b}>{DUE_BUCKET_LABELS[b]}</option>
+              ))}
+            </select>
+          </div>
+
+          {groups.length > 0 && (
+            <div className="filter-item">
+              <span className="filter-label">グループ</span>
+              <select
+                value={filterGroupId}
+                onChange={(e) => {
+                  setFilterGroupId(e.target.value);
+                  setFilterProjectId("all");
+                }}
+              >
+                <option value="all">すべて</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {projects.length > 0 && (
+            <div className="filter-item">
+              <span className="filter-label">プロジェクト</span>
+              <select
+                value={filterProjectId}
+                onChange={(e) => setFilterProjectId(e.target.value)}
+              >
+                <option value="all">すべて</option>
+                {(filterGroupId !== "all"
+                  ? projects.filter((p) => p.groupId === filterGroupId)
+                  : projects
+                ).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {buckets.length > 0 && (
+            <div className="filter-item">
+              <span className="filter-label">Bucket</span>
+              <select
+                value={filterBucketId}
+                onChange={(e) => setFilterBucketId(e.target.value)}
+              >
+                <option value="all">すべて</option>
+                {buckets.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Task list */}
       {sorted.length === 0 ? (
@@ -243,64 +263,85 @@ export function TasksPage() {
           {sorted.map((task) => {
             const bucket = getDueBucket(task.dueDate);
             const isDone = task.status === "done";
+            const isExpanded = expandedId === task.id;
             return (
               <div
                 key={task.id}
                 className={`task-card ${isDone ? "task-card--done" : ""}`}
               >
-                <input
-                  type="checkbox"
-                  className="task-checkbox"
-                  checked={isDone}
-                  onChange={() => handleToggleDone(task.id)}
-                />
-
-                <div className="task-body" onClick={() => navigate(`/tasks/${task.id}/edit`)}>
-                  <p className={`task-title ${isDone ? "task-title--done" : ""}`}>
+                {/* Compact row: checkbox + icon + title + due */}
+                <div className="task-compact" onClick={() => toggleExpand(task.id)}>
+                  <input
+                    type="checkbox"
+                    className="task-checkbox"
+                    checked={isDone}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleToggleDone(task.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <span className={`task-priority-icon task-priority-icon--${task.priority}`}>
+                    {priorityIcon(task.priority)}
+                  </span>
+                  <span className={`task-title ${isDone ? "task-title--done" : ""}`}>
                     {task.title}
-                  </p>
-                  <div className="task-meta">
-                    <span className={`badge badge-priority-${task.priority}`}>
-                      {PRIORITY_LABELS[task.priority]}
+                  </span>
+                  {task.dueDate && (
+                    <span className={`task-due-compact ${bucket === "overdue" ? "task-due-compact--overdue" : ""}`}>
+                      {task.dueDate}
                     </span>
-                    <span className="badge badge-status">
-                      {STATUS_LABELS[task.status]}
-                    </span>
-                    {task.dueDate && (
-                      <span className={`badge badge-due ${bucket === "overdue" ? "badge-overdue" : ""}`}>
-                        {task.dueDate}
-                        {bucket ? ` (${DUE_BUCKET_LABELS[bucket]})` : ""}
-                      </span>
-                    )}
-                    {task.groupId && groupName(task.groupId) && (
-                      <span className="badge badge-master">{groupName(task.groupId)}</span>
-                    )}
-                    {task.projectId && projectName(task.projectId) && (
-                      <span className="badge badge-master">{projectName(task.projectId)}</span>
-                    )}
-                    {task.bucketIds.map((bid) => (
-                      <span key={bid} className="badge badge-bucket">{bucketName(bid)}</span>
-                    ))}
-                    {task.recurrenceTemplateId && (
-                      <span className="badge badge-recurrence">繰り返し</span>
-                    )}
-                  </div>
+                  )}
+                  <span className="task-expand-icon">{isExpanded ? "\u25B2" : "\u25BC"}</span>
                 </div>
 
-                <div className="task-actions">
-                  <button
-                    className="btn-sm btn-ghost"
-                    onClick={() => navigate(`/tasks/${task.id}/edit`)}
-                  >
-                    編集
-                  </button>
-                  <button
-                    className="btn-sm btn-danger"
-                    onClick={() => handleDelete(task.id)}
-                  >
-                    削除
-                  </button>
-                </div>
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="task-detail">
+                    <div className="task-meta">
+                      <span className={`badge badge-priority-${task.priority}`}>
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
+                      <span className="badge badge-status">
+                        {STATUS_LABELS[task.status]}
+                      </span>
+                      {task.dueDate && bucket && (
+                        <span className={`badge badge-due ${bucket === "overdue" ? "badge-overdue" : ""}`}>
+                          {DUE_BUCKET_LABELS[bucket]}
+                        </span>
+                      )}
+                      {task.groupId && groupName(task.groupId) && (
+                        <span className="badge badge-master">{groupName(task.groupId)}</span>
+                      )}
+                      {task.projectId && projectName(task.projectId) && (
+                        <span className="badge badge-master">{projectName(task.projectId)}</span>
+                      )}
+                      {task.bucketIds.map((bid) => (
+                        <span key={bid} className="badge badge-bucket">{bucketName(bid)}</span>
+                      ))}
+                      {task.recurrenceTemplateId && (
+                        <span className="badge badge-recurrence">繰り返し</span>
+                      )}
+                    </div>
+                    {task.memo && (
+                      <p className="task-detail-memo">{task.memo}</p>
+                    )}
+                    <div className="task-actions">
+                      <button
+                        className="btn-sm btn-ghost"
+                        onClick={() => navigate(`/tasks/${task.id}/edit`)}
+                      >
+                        編集
+                      </button>
+                      <button
+                        className="btn-sm btn-danger"
+                        onClick={() => handleDelete(task.id)}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
