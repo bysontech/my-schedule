@@ -831,11 +831,11 @@ textarea {
   color: var(--c-text-muted);
 }
 
-/* ── Dashboard ── */
+/* ── Dashboard (3-tier) ── */
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .dash-section {
@@ -848,7 +848,7 @@ textarea {
 
 .dash-section-title {
   margin: 0 0 0.75rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -859,18 +859,50 @@ textarea {
   color: var(--c-danger);
 }
 
+/* Strategy stat cards */
 .dash-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 0.6rem;
 }
 
+.dash-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--c-surface-hover);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.dash-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1;
+}
+
+.dash-stat-sub {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+}
+
+.dash-stat-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+  margin-top: 0.15rem;
+}
+
+/* Danger zone cards */
 .dash-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  padding: 0.85rem 0.5rem;
+  padding: 0.75rem 0.5rem;
   background: var(--c-surface-hover);
   border: 1px solid var(--c-border-light);
   border-radius: var(--radius-sm);
@@ -879,108 +911,192 @@ textarea {
 }
 
 .dash-card:hover {
-  border-color: var(--c-primary);
-  background: var(--c-primary-light);
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
 }
 
-.dash-card--alert {
-  border-color: var(--c-danger);
-  background: var(--c-danger-light);
-}
-
-.dash-card--alert:hover {
-  border-color: var(--c-danger);
-}
-
 .dash-card-count {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--c-text);
   line-height: 1;
 }
 
-.dash-card--alert .dash-card-count {
-  color: var(--c-danger);
-}
-
 .dash-card-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 500;
   color: var(--c-text-muted);
 }
 
-.dash-quick-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
+/* Color: danger (red) = overdue/today */
+.dash-card--danger {
+  border-color: var(--c-danger);
+  background: var(--c-danger-light);
 }
 
-.dash-quick-header .dash-section-title {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.dash-card--danger .dash-card-count {
+  color: var(--c-danger);
 }
 
-.dash-quick-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.3rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border-radius: 999px;
-  background: var(--c-border);
-  color: var(--c-text-secondary);
+.dash-card--danger:hover {
+  border-color: var(--c-danger);
 }
 
-.dash-section-title--alert .dash-quick-count {
-  background: var(--c-danger);
-  color: #fff;
+/* Color: caution (yellow) = thisWeekHigh */
+.dash-card--caution {
+  border-color: var(--c-warning);
+  background: #fef3c7;
 }
 
-.dash-quick-list {
+.dash-card--caution .dash-card-count {
+  color: #92400e;
+}
+
+.dash-card--caution:hover {
+  border-color: var(--c-warning);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dash-card--caution { background: #78350f30; border-color: #d97706; }
+  .dash-card--caution .dash-card-count { color: #fbbf24; }
+}
+
+/* Danger preview list */
+.dash-danger-preview {
+  margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.5rem;
 }
 
-.dash-quick-item {
+.dash-danger-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dash-danger-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0;
+  color: var(--c-text-muted);
+}
+
+.dash-danger-group-label--danger {
+  color: var(--c-danger);
+}
+
+.dash-danger-item {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.65rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition);
 }
 
-.dash-quick-item:hover {
+.dash-danger-item:hover {
   background: var(--c-surface-hover);
 }
 
-.dash-quick-badge {
+.dash-danger-icon {
   flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-text-secondary);
 }
 
-.dash-quick-title {
+.dash-danger-title {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dash-quick-due {
+.dash-danger-due {
   flex-shrink: 0;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--c-text-muted);
+}
+
+/* Group progress (bottom tier) */
+.dash-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dash-group-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  background: var(--c-surface-hover);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+}
+
+.dash-group-row:hover {
+  border-color: var(--c-primary);
+  transform: none;
+  box-shadow: var(--shadow-card-hover);
+}
+
+.dash-group-name {
+  flex-shrink: 0;
+  min-width: 5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2b6cb0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dash-group-name { color: #90cdf4; }
+}
+
+.dash-group-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--c-border-light);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dash-group-bar-fill {
+  display: block;
+  height: 100%;
+  background: #2b6cb0;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dash-group-bar-fill { background: #63b3ed; }
+}
+
+.dash-group-rate {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--c-text);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.dash-group-fraction {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+  min-width: 2.5rem;
+  text-align: right;
 }
 
 /* ── Responsive ── */

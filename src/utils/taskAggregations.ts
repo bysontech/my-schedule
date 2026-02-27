@@ -45,6 +45,112 @@ export function aggregateCounts(tasks: Task[]): TaskAggregation {
   return { dueCounts, statusCounts, priorityCounts };
 }
 
+/* ── Strategy summary (top tier) ── */
+
+export interface StrategySummary {
+  total: number;
+  inProgress: number;
+  done: number;
+  completionRate: number; // 0-100
+  thisWeekTotal: number;
+  thisWeekDone: number;
+  thisWeekRate: number; // 0-100
+}
+
+export function computeStrategySummary(tasks: Task[]): StrategySummary {
+  const total = tasks.length;
+  const inProgress = tasks.filter((t) => t.status === "in_progress").length;
+  const done = tasks.filter((t) => t.status === "done").length;
+  const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const thisWeekBuckets: Set<DueBucket | null> = new Set(["overdue", "today", "thisWeek"]);
+  const thisWeekTasks = tasks.filter((t) => thisWeekBuckets.has(getDueBucket(t.dueDate)));
+  const thisWeekTotal = thisWeekTasks.length;
+  const thisWeekDone = thisWeekTasks.filter((t) => t.status === "done").length;
+  const thisWeekRate = thisWeekTotal > 0 ? Math.round((thisWeekDone / thisWeekTotal) * 100) : 0;
+
+  return { total, inProgress, done, completionRate, thisWeekTotal, thisWeekDone, thisWeekRate };
+}
+
+/* ── Danger zone (middle tier) ── */
+
+export interface DangerCounts {
+  overdue: number;
+  today: number;
+  thisWeekHigh: number;
+}
+
+export function computeDangerCounts(tasks: Task[]): DangerCounts {
+  let overdue = 0;
+  let today = 0;
+  let thisWeekHigh = 0;
+
+  for (const task of tasks) {
+    if (task.status === "done") continue;
+    const bucket = getDueBucket(task.dueDate);
+    if (bucket === "overdue") overdue++;
+    if (bucket === "today") today++;
+    if (bucket === "thisWeek" && task.priority === "high") thisWeekHigh++;
+  }
+
+  return { overdue, today, thisWeekHigh };
+}
+
+/* ── Group progress (bottom tier) ── */
+
+export interface GroupProgress {
+  groupId: string | null;
+  groupName: string;
+  total: number;
+  done: number;
+  rate: number; // 0-100
+}
+
+export function computeGroupProgress(
+  tasks: Task[],
+  groups: { id: string; name: string }[],
+): GroupProgress[] {
+  const acc = new Map<string | null, { total: number; done: number }>();
+
+  for (const task of tasks) {
+    const key = task.groupId;
+    const entry = acc.get(key) ?? { total: 0, done: 0 };
+    entry.total++;
+    if (task.status === "done") entry.done++;
+    acc.set(key, entry);
+  }
+
+  const result: GroupProgress[] = [];
+
+  for (const g of groups) {
+    const entry = acc.get(g.id);
+    if (entry) {
+      result.push({
+        groupId: g.id,
+        groupName: g.name,
+        total: entry.total,
+        done: entry.done,
+        rate: Math.round((entry.done / entry.total) * 100),
+      });
+    }
+  }
+
+  const unassigned = acc.get(null);
+  if (unassigned) {
+    result.push({
+      groupId: null,
+      groupName: "未分類",
+      total: unassigned.total,
+      done: unassigned.done,
+      rate: Math.round((unassigned.done / unassigned.total) * 100),
+    });
+  }
+
+  return result;
+}
+
+/* ── Existing helpers ── */
+
 export function filterByDueBucket(tasks: Task[], bucket: DueBucket): Task[] {
   return tasks.filter((t) => getDueBucket(t.dueDate) === bucket);
 }
@@ -57,7 +163,6 @@ export function filterByPriority(tasks: Task[], priority: TaskPriority): Task[] 
   return tasks.filter((t) => t.priority === priority);
 }
 
-/** overdue or today tasks that are not done, sorted by dueDate asc, limited */
 export function getQuickList(
   tasks: Task[],
   bucket: DueBucket,

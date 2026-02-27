@@ -40,8 +40,9 @@ export function TasksPage() {
   const qStatus = searchParams.get("status");
   const qPriority = searchParams.get("priority");
   const qDue = searchParams.get("due");
+  const qGroupId = searchParams.get("groupId");
 
-  const hasQueryFilter = !!(qStatus || qPriority || qDue);
+  const hasQueryFilter = !!(qStatus || qPriority || qDue || qGroupId);
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">(
     qStatus && VALID_STATUSES.has(qStatus) ? (qStatus as TaskStatus) : "all",
@@ -52,7 +53,7 @@ export function TasksPage() {
   const [filterDueBucket, setFilterDueBucket] = useState<DueBucket | "all">(
     qDue && VALID_DUE_BUCKETS.has(qDue) ? (qDue as DueBucket) : "all",
   );
-  const [filterGroupId, setFilterGroupId] = useState<string>("all");
+  const [filterGroupId, setFilterGroupId] = useState<string>(qGroupId ?? "all");
   const [filterProjectId, setFilterProjectId] = useState<string>("all");
   const [filterBucketId, setFilterBucketId] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("dueDate");
