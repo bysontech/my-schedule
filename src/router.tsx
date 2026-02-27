@@ -4,6 +4,7 @@ import {
 } from "react-router-dom";
 import App from "./App";
 import { DashboardPage } from "./pages/DashboardPage";
+import { FocusPage } from "./pages/FocusPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
 import { MastersPage } from "./pages/MastersPage";
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <Navigate to="/dashboard" replace /> },
       { path: "/dashboard", element: <DashboardPage /> },
+      { path: "/focus", element: <FocusPage /> },
       { path: "/tasks", element: <TasksPage /> },
       { path: "/tasks/new", element: <TaskFormPage /> },
       { path: "/tasks/:id/edit", element: <TaskFormPage /> },

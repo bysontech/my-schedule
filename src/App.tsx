@@ -16,10 +16,16 @@ export default function App() {
               Home
             </Link>
             <Link
+              to="/focus"
+              className={`nav-link ${pathname === "/focus" ? "nav-link--active" : ""}`}
+            >
+              Focus
+            </Link>
+            <Link
               to="/tasks"
               className={`nav-link ${pathname === "/tasks" ? "nav-link--active" : ""}`}
             >
-              Tasks
+              Planning
             </Link>
             <Link
               to="/masters"
