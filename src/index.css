@@ -598,9 +598,15 @@ textarea {
   color: #065f46;
 }
 
+.badge-recurrence {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 @media (prefers-color-scheme: dark) {
   .badge-master { background: #44337a; color: #d6bcfa; }
   .badge-bucket { background: #064e3b; color: #6ee7b7; }
+  .badge-recurrence { background: #78350f30; color: #fbbf24; }
 }
 
 /* ── Settings page ── */

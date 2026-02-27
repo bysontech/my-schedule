@@ -22,6 +22,12 @@ export default function App() {
               Masters
             </Link>
             <Link
+              to="/recurrence"
+              className={`nav-link ${pathname === "/recurrence" ? "nav-link--active" : ""}`}
+            >
+              Repeat
+            </Link>
+            <Link
               to="/settings"
               className={`nav-link ${pathname === "/settings" ? "nav-link--active" : ""}`}
             >

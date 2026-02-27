@@ -8,6 +8,7 @@ import type { Group, Project, Bucket } from "../domain/master";
 import { listGroups } from "../db/groupsRepo";
 import { listProjects } from "../db/projectsRepo";
 import { listBuckets } from "../db/bucketsRepo";
+import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
 
 type SortKey = "dueDate" | "priority" | "updatedAt";
 
@@ -46,7 +47,7 @@ export function TasksPage() {
   };
 
   useEffect(() => {
-    load();
+    ensureNextInstanceForAllActiveTemplates().then(() => load());
   }, []);
 
   const filtered = useMemo(() => {
@@ -265,6 +266,9 @@ export function TasksPage() {
                     {task.bucketIds.map((bid) => (
                       <span key={bid} className="badge badge-bucket">{bucketName(bid)}</span>
                     ))}
+                    {task.recurrenceTemplateId && (
+                      <span className="badge badge-recurrence">繰り返し</span>
+                    )}
                   </div>
                 </div>
 
