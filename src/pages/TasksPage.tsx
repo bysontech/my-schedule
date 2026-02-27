@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import { priorityOrder } from "../domain/task";
 import { listTasks, toggleDone, softDeleteTask } from "../db/tasksRepo";
@@ -24,16 +24,31 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   done: "完了",
 };
 
+const VALID_STATUSES = new Set<string>(["todo", "in_progress", "done"]);
+const VALID_PRIORITIES = new Set<string>(["high", "med", "low"]);
+const VALID_DUE_BUCKETS = new Set<string>(["overdue", "today", "thisWeek", "thisMonth"]);
+
 export function TasksPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
 
-  const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
-  const [filterPriority, setFilterPriority] = useState<TaskPriority | "all">("all");
-  const [filterDueBucket, setFilterDueBucket] = useState<DueBucket | "all">("all");
+  const qStatus = searchParams.get("status");
+  const qPriority = searchParams.get("priority");
+  const qDue = searchParams.get("due");
+
+  const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">(
+    qStatus && VALID_STATUSES.has(qStatus) ? (qStatus as TaskStatus) : "all",
+  );
+  const [filterPriority, setFilterPriority] = useState<TaskPriority | "all">(
+    qPriority && VALID_PRIORITIES.has(qPriority) ? (qPriority as TaskPriority) : "all",
+  );
+  const [filterDueBucket, setFilterDueBucket] = useState<DueBucket | "all">(
+    qDue && VALID_DUE_BUCKETS.has(qDue) ? (qDue as DueBucket) : "all",
+  );
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
   const [filterProjectId, setFilterProjectId] = useState<string>("all");
   const [filterBucketId, setFilterBucketId] = useState<string>("all");
