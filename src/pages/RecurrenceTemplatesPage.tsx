@@ -7,6 +7,8 @@ import { listAllTemplates, upsertTemplate, deleteTemplate } from "../db/recurren
 import { listGroups } from "../db/groupsRepo";
 import { listProjects } from "../db/projectsRepo";
 import { listBuckets } from "../db/bucketsRepo";
+import { KebabMenu } from "../components/KebabMenu";
+import { Drawer } from "../components/Drawer";
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = { high: "High", med: "Med", low: "Low" };
 
@@ -30,7 +32,7 @@ export function RecurrenceTemplatesPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
 
-  const [showForm, setShowForm] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [titleError, setTitleError] = useState(false);
@@ -47,7 +49,7 @@ export function RecurrenceTemplatesPage() {
     setEditingId(null);
     setForm(emptyForm());
     setTitleError(false);
-    setShowForm(true);
+    setDrawerOpen(true);
   };
 
   const openEdit = (t: RecurrenceTemplate) => {
@@ -64,7 +66,7 @@ export function RecurrenceTemplatesPage() {
       bucketIds: [...t.bucketIds],
     });
     setTitleError(false);
-    setShowForm(true);
+    setDrawerOpen(true);
   };
 
   const handleSave = async () => {
@@ -92,7 +94,7 @@ export function RecurrenceTemplatesPage() {
     };
 
     await upsertTemplate(tmpl);
-    setShowForm(false);
+    setDrawerOpen(false);
     load();
   };
 
@@ -120,17 +122,55 @@ export function RecurrenceTemplatesPage() {
     : projects;
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h2 className="form-title" style={{ margin: 0 }}>繰り返しテンプレート</h2>
-        {!showForm && <button onClick={openNew}>+ 新規作成</button>}
+    <div className="repeat-page">
+      <div className="repeat-header">
+        <h2 className="dash-section-title" style={{ margin: 0 }}>繰り返しテンプレート</h2>
+        <button className="btn-sm" onClick={openNew}>+ 新規作成</button>
       </div>
 
-      {/* Form */}
-      {showForm && (
-        <div className="settings-section" style={{ marginBottom: "1.5rem" }}>
-          <h3 className="settings-section-title">{editingId ? "テンプレ編集" : "テンプレ作成"}</h3>
+      {/* Template list */}
+      {templates.length === 0 && (
+        <div className="empty-state">
+          <p>繰り返しテンプレートがありません</p>
+        </div>
+      )}
 
+      {templates.length > 0 && (
+        <div className="repeat-list">
+          {templates.map((t) => (
+            <div key={t.id} className={`repeat-row ${!t.isActive ? "repeat-row--inactive" : ""}`}>
+              <input
+                type="checkbox"
+                className="task-checkbox"
+                checked={t.isActive}
+                onChange={() => handleToggleActive(t)}
+                title={t.isActive ? "無効にする" : "有効にする"}
+              />
+              <div className="repeat-row-body" onClick={() => openEdit(t)}>
+                <span className={`repeat-row-title ${!t.isActive ? "repeat-row-title--inactive" : ""}`}>
+                  {t.title}
+                </span>
+                <div className="repeat-row-meta">
+                  <span className="badge badge-recurrence">{describeRecurrence(t)}</span>
+                  <span className={`badge badge-priority-${t.priority}`}>{PRIORITY_LABELS[t.priority]}</span>
+                </div>
+              </div>
+              <KebabMenu items={[
+                { label: "編集", onClick: () => openEdit(t) },
+                { label: "削除", danger: true, onClick: () => handleDelete(t.id) },
+              ]} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit / New Drawer */}
+      <Drawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editingId ? "テンプレ編集" : "テンプレ作成"}
+      >
+        <div className="repeat-form">
           <div className="form-group">
             <label className="form-label">タイトル <span className="form-required">*</span></label>
             <input
@@ -276,47 +316,10 @@ export function RecurrenceTemplatesPage() {
 
           <div className="form-actions">
             <button onClick={handleSave}>保存</button>
-            <button className="btn-secondary" onClick={() => setShowForm(false)}>キャンセル</button>
+            <button className="btn-secondary" onClick={() => setDrawerOpen(false)}>キャンセル</button>
           </div>
         </div>
-      )}
-
-      {/* Template list */}
-      {templates.length === 0 && !showForm && (
-        <div className="empty-state">
-          <p>繰り返しテンプレートがありません</p>
-        </div>
-      )}
-
-      {templates.length > 0 && (
-        <div className="task-list">
-          {templates.map((t) => (
-            <div key={t.id} className={`task-card ${!t.isActive ? "task-card--done" : ""}`}>
-              <input
-                type="checkbox"
-                className="task-checkbox"
-                checked={t.isActive}
-                onChange={() => handleToggleActive(t)}
-                title={t.isActive ? "無効にする" : "有効にする"}
-              />
-              <div className="task-body" onClick={() => openEdit(t)}>
-                <p className={`task-title ${!t.isActive ? "task-title--done" : ""}`}>{t.title}</p>
-                <div className="task-meta">
-                  <span className="badge badge-recurrence">{describeRecurrence(t)}</span>
-                  <span className={`badge badge-priority-${t.priority}`}>{PRIORITY_LABELS[t.priority]}</span>
-                  <span className={`badge ${t.isActive ? "badge-status" : "badge-overdue"}`}>
-                    {t.isActive ? "有効" : "無効"}
-                  </span>
-                </div>
-              </div>
-              <div className="task-actions">
-                <button className="btn-sm btn-ghost" onClick={() => openEdit(t)}>編集</button>
-                <button className="btn-sm btn-danger" onClick={() => handleDelete(t.id)}>削除</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      </Drawer>
     </div>
   );
 }
