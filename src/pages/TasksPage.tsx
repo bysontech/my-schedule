@@ -9,7 +9,8 @@ import { listGroups } from "../db/groupsRepo";
 import { listProjects } from "../db/projectsRepo";
 import { listBuckets } from "../db/bucketsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
-import { priorityIcon } from "../utils/priorityIcon";
+import { TaskRow } from "../components/TaskRow";
+import { KebabMenu, type KebabItem } from "../components/KebabMenu";
 
 type SortKey = "dueDate" | "priority" | "updatedAt";
 
@@ -319,38 +320,21 @@ export function TasksPage() {
         <div className="task-list">
           {sorted.map((task) => {
             const bucket = getDueBucket(task.dueDate);
-            const isDone = task.status === "done";
             const isExpanded = expandedId === task.id;
+
+            const kebabItems: KebabItem[] = [
+              { label: "編集", onClick: () => navigate(`/tasks/${task.id}/edit`) },
+              { label: "削除", danger: true, onClick: () => handleDelete(task.id) },
+            ];
+
             return (
-              <div
-                key={task.id}
-                className={`task-card ${isDone ? "task-card--done" : ""}`}
-              >
-                {/* Compact row: checkbox + icon + title + due */}
-                <div className="task-compact" onClick={() => toggleExpand(task.id)}>
-                  <input
-                    type="checkbox"
-                    className="task-checkbox"
-                    checked={isDone}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleToggleDone(task.id);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <span className={`task-priority-icon task-priority-icon--${task.priority}`}>
-                    {priorityIcon(task.priority)}
-                  </span>
-                  <span className={`task-title ${isDone ? "task-title--done" : ""}`}>
-                    {task.title}
-                  </span>
-                  {task.dueDate && (
-                    <span className={`task-due-compact ${bucket === "overdue" ? "task-due-compact--overdue" : ""}`}>
-                      {task.dueDate}
-                    </span>
-                  )}
-                  <span className="task-expand-icon">{isExpanded ? "\u25B2" : "\u25BC"}</span>
-                </div>
+              <div key={task.id} className="task-card">
+                <TaskRow
+                  task={task}
+                  onToggleDone={handleToggleDone}
+                  onClickTitle={() => toggleExpand(task.id)}
+                  extra={<KebabMenu items={kebabItems} />}
+                />
 
                 {/* Expanded details */}
                 {isExpanded && (
@@ -383,20 +367,6 @@ export function TasksPage() {
                     {task.memo && (
                       <p className="task-detail-memo">{task.memo}</p>
                     )}
-                    <div className="task-actions">
-                      <button
-                        className="btn-sm btn-ghost"
-                        onClick={() => navigate(`/tasks/${task.id}/edit`)}
-                      >
-                        編集
-                      </button>
-                      <button
-                        className="btn-sm btn-danger"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        削除
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

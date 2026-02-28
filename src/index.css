@@ -738,6 +738,194 @@ textarea {
   .settings-message--error { background: #7f1d1d40; color: #fca5a5; }
 }
 
+/* ── TaskRow (shared) ── */
+.taskrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.taskrow:hover {
+  background: var(--c-surface-hover);
+}
+
+.taskrow--done {
+  background: var(--c-done-bg);
+  opacity: 0.7;
+}
+
+.taskrow--selected {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+  background: var(--c-primary-light);
+}
+
+.taskrow-priority {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-secondary);
+}
+
+.taskrow-title {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.taskrow-title[role="button"] {
+  cursor: pointer;
+}
+
+.taskrow-title--done {
+  text-decoration: line-through;
+  color: var(--c-text-muted);
+}
+
+.taskrow-due {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+}
+
+.taskrow-due--danger {
+  color: var(--c-danger);
+  font-weight: 600;
+}
+
+/* ── KebabMenu ── */
+.kebab {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.kebab-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--c-text-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  transition: background var(--transition);
+}
+
+.kebab-btn:hover {
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+  transform: none;
+}
+
+.kebab-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  min-width: 7rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card-hover);
+  padding: 0.25rem 0;
+}
+
+.kebab-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--c-text);
+  transition: background var(--transition);
+}
+
+.kebab-menu-item:hover {
+  background: var(--c-surface-hover);
+  transform: none;
+}
+
+.kebab-menu-item--danger {
+  color: var(--c-danger);
+}
+
+/* ── Drawer ── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 101;
+  width: min(26rem, 90vw);
+  background: var(--c-bg);
+  border-left: 1px solid var(--c-border);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--c-border-light);
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  line-height: 1;
+}
+
+.drawer-close:hover {
+  color: var(--c-text);
+  transform: none;
+}
+
+.drawer-body {
+  flex: 1;
+  padding: 1rem 1.25rem;
+}
+
+.drawer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 /* ── Focus page ── */
 .focus-page {
   display: flex;
