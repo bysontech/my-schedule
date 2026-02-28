@@ -831,6 +831,86 @@ textarea {
   color: var(--c-text-muted);
 }
 
+.focus-row--active {
+  background: var(--c-primary-light);
+}
+
+.focus-status-btn {
+  flex-shrink: 0;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--c-border-light);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.focus-status-btn:hover {
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+  border-color: var(--c-primary);
+  transform: none;
+}
+
+.focus-status-btn--active {
+  background: var(--c-primary);
+  color: #fff;
+  border-color: var(--c-primary);
+}
+
+.focus-status-btn--active:hover {
+  background: var(--c-primary-hover);
+  color: #fff;
+  border-color: var(--c-primary-hover);
+}
+
+.focus-quick-add {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.focus-quick-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition);
+}
+
+.focus-quick-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(91, 106, 191, 0.15);
+}
+
+.focus-quick-input::placeholder {
+  color: var(--c-text-muted);
+}
+
+.focus-footer {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.focus-planning-link {
+  font-size: 0.82rem;
+  color: var(--c-text-muted);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.focus-planning-link:hover {
+  color: var(--c-primary);
+}
+
 /* ── Dashboard (3-tier) ── */
 .dashboard {
   display: flex;
