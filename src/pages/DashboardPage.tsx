@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "../domain/task";
 import type { Group } from "../domain/master";
-import { listTasks } from "../db/tasksRepo";
+import { listTasks, toggleDone } from "../db/tasksRepo";
 import { listGroups } from "../db/groupsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
 import {
@@ -10,19 +10,23 @@ import {
   computeDangerCounts,
   computeGroupProgress,
 } from "../utils/taskAggregations";
-import { priorityIcon } from "../utils/priorityIcon";
 import { getDueBucket } from "../utils/dateBuckets";
+import { TaskRow } from "../components/TaskRow";
+import { TaskEditDrawer } from "../components/TaskEditDrawer";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const load = () => {
+    listTasks().then(setTasks);
+    listGroups().then(setGroups);
+  };
 
   useEffect(() => {
-    ensureNextInstanceForAllActiveTemplates().then(() => {
-      listTasks().then(setTasks);
-      listGroups().then(setGroups);
-    });
+    ensureNextInstanceForAllActiveTemplates().then(() => load());
   }, []);
 
   const strategy = useMemo(() => computeStrategySummary(tasks), [tasks]);
@@ -30,6 +34,11 @@ export function DashboardPage() {
   const groupProgress = useMemo(() => computeGroupProgress(tasks, groups), [tasks, groups]);
 
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
+
+  const handleToggleDone = async (id: string) => {
+    await toggleDone(id);
+    load();
+  };
 
   // Quick list: overdue + today (not done), max 5 each
   const quickOverdue = useMemo(
@@ -105,18 +114,19 @@ export function DashboardPage() {
           </button>
         </div>
 
-        {/* Quick preview of overdue/today */}
+        {/* Quick preview of overdue/today using TaskRow */}
         {(quickOverdue.length > 0 || quickToday.length > 0) && (
           <div className="dash-danger-preview">
             {quickOverdue.length > 0 && (
               <div className="dash-danger-group">
                 <span className="dash-danger-group-label dash-danger-group-label--danger">期限切れ</span>
                 {quickOverdue.map((t) => (
-                  <div key={t.id} className="dash-danger-item" onClick={() => navigate(`/tasks/${t.id}/edit`)}>
-                    <span className="dash-danger-icon">{priorityIcon(t.priority)}</span>
-                    <span className="dash-danger-title">{t.title}</span>
-                    <span className="dash-danger-due">{t.dueDate}</span>
-                  </div>
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    onToggleDone={handleToggleDone}
+                    onClickTitle={(task) => setEditingTask(task)}
+                  />
                 ))}
               </div>
             )}
@@ -124,11 +134,12 @@ export function DashboardPage() {
               <div className="dash-danger-group">
                 <span className="dash-danger-group-label dash-danger-group-label--danger">今日</span>
                 {quickToday.map((t) => (
-                  <div key={t.id} className="dash-danger-item" onClick={() => navigate(`/tasks/${t.id}/edit`)}>
-                    <span className="dash-danger-icon">{priorityIcon(t.priority)}</span>
-                    <span className="dash-danger-title">{t.title}</span>
-                    <span className="dash-danger-due">{t.dueDate}</span>
-                  </div>
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    onToggleDone={handleToggleDone}
+                    onClickTitle={(task) => setEditingTask(task)}
+                  />
                 ))}
               </div>
             )}
@@ -165,6 +176,13 @@ export function DashboardPage() {
           </div>
         </section>
       )}
+
+      {/* Drawer for editing */}
+      <TaskEditDrawer
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+        onSaved={load}
+      />
     </div>
   );
 }
