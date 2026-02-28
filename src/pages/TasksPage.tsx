@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import { priorityOrder } from "../domain/task";
@@ -60,6 +60,8 @@ export function TasksPage() {
 
   const [showFilter, setShowFilter] = useState(hasQueryFilter);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     listTasks().then(setTasks);
@@ -74,6 +76,14 @@ export function TasksPage() {
 
   const filtered = useMemo(() => {
     let result = tasks;
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          (t.memo && t.memo.toLowerCase().includes(q)),
+      );
+    }
     if (filterStatus !== "all") {
       result = result.filter((t) => t.status === filterStatus);
     }
@@ -93,7 +103,7 @@ export function TasksPage() {
       result = result.filter((t) => t.bucketIds.includes(filterBucketId));
     }
     return result;
-  }, [tasks, filterStatus, filterPriority, filterDueBucket, filterGroupId, filterProjectId, filterBucketId]);
+  }, [tasks, searchQuery, filterStatus, filterPriority, filterDueBucket, filterGroupId, filterProjectId, filterBucketId]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -134,8 +144,54 @@ export function TasksPage() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  // Keyboard: "/" to focus search, Esc to clear/blur
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      const inInput = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+
+      if (e.key === "/" && !inInput) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === "Escape" && document.activeElement === searchRef.current) {
+        if (searchQuery) {
+          setSearchQuery("");
+        } else {
+          searchRef.current?.blur();
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [searchQuery]);
+
   return (
     <div>
+      {/* Search */}
+      <div className="focus-search" style={{ marginBottom: "0.75rem" }}>
+        <input
+          ref={searchRef}
+          type="text"
+          className="focus-search-input"
+          placeholder="タイトル・メモで検索 ( / )"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            className="focus-search-clear"
+            onClick={() => {
+              setSearchQuery("");
+              searchRef.current?.focus();
+            }}
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       {/* Filter toggle */}
       <div className="planning-toolbar">
         <button

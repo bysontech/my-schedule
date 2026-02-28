@@ -911,6 +911,78 @@ textarea {
   color: var(--c-primary);
 }
 
+.focus-search {
+  position: relative;
+}
+
+.focus-search-input {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  transition: border-color var(--transition);
+}
+
+.focus-search-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(91, 106, 191, 0.15);
+}
+
+.focus-search-input::placeholder {
+  color: var(--c-text-muted);
+}
+
+.focus-search-clear {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--c-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  line-height: 1;
+}
+
+.focus-search-clear:hover {
+  color: var(--c-text);
+  transform: translateY(-50%);
+}
+
+.focus-row--selected {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+  background: var(--c-primary-light);
+}
+
+.focus-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.focus-hints kbd {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.65rem;
+  font-family: inherit;
+  background: var(--c-border-light);
+  border: 1px solid var(--c-border);
+  border-radius: 3px;
+  margin-right: 0.15rem;
+}
+
 /* ── Dashboard (3-tier) ── */
 .dashboard {
   display: flex;
