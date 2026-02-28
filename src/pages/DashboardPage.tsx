@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "../domain/task";
 import type { Group } from "../domain/master";
@@ -13,6 +13,11 @@ import {
 import { getDueBucket } from "../utils/dateBuckets";
 import { TaskRow } from "../components/TaskRow";
 import { TaskEditDrawer } from "../components/TaskEditDrawer";
+import { CalendarMonth } from "../components/CalendarMonth";
+import { CalendarWeek } from "../components/CalendarWeek";
+import { DayTasksDrawer } from "../components/DayTasksDrawer";
+
+type CalendarView = "week" | "month";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -20,14 +25,22 @@ export function DashboardPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const load = () => {
+  // Calendar state
+  const [calView, setCalView] = useState<CalendarView>("week");
+  const [calRef, setCalRef] = useState(() => new Date()); // reference date for week/month nav
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const calYear = calRef.getFullYear();
+  const calMonth = calRef.getMonth() + 1; // 1-12
+
+  const load = useCallback(() => {
     listTasks().then(setTasks);
     listGroups().then(setGroups);
-  };
+  }, []);
 
   useEffect(() => {
     ensureNextInstanceForAllActiveTemplates().then(() => load());
-  }, []);
+  }, [load]);
 
   const strategy = useMemo(() => computeStrategySummary(tasks), [tasks]);
   const danger = useMemo(() => computeDangerCounts(tasks), [tasks]);
@@ -35,10 +48,10 @@ export function DashboardPage() {
 
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
 
-  const handleToggleDone = async (id: string) => {
+  const handleToggleDone = useCallback(async (id: string) => {
     await toggleDone(id);
     load();
-  };
+  }, [load]);
 
   // Quick list: overdue + today (not done), max 5 each
   const quickOverdue = useMemo(
@@ -57,6 +70,50 @@ export function DashboardPage() {
         .slice(0, 5),
     [tasks],
   );
+
+  // Calendar navigation
+  const goCalPrev = () => {
+    setCalRef((prev) => {
+      const d = new Date(prev);
+      if (calView === "month") {
+        d.setMonth(d.getMonth() - 1);
+      } else {
+        d.setDate(d.getDate() - 7);
+      }
+      return d;
+    });
+  };
+
+  const goCalNext = () => {
+    setCalRef((prev) => {
+      const d = new Date(prev);
+      if (calView === "month") {
+        d.setMonth(d.getMonth() + 1);
+      } else {
+        d.setDate(d.getDate() + 7);
+      }
+      return d;
+    });
+  };
+
+  const goCalToday = () => {
+    setCalRef(new Date());
+  };
+
+  const calTitle =
+    calView === "month"
+      ? `${calYear}年${calMonth}月`
+      : (() => {
+          const d = new Date(calRef);
+          const dow = (d.getDay() + 6) % 7;
+          const mon = new Date(d);
+          mon.setDate(mon.getDate() - dow);
+          const sun = new Date(mon);
+          sun.setDate(sun.getDate() + 6);
+          const fmtShort = (dt: Date) =>
+            `${dt.getMonth() + 1}/${dt.getDate()}`;
+          return `${fmtShort(mon)} – ${fmtShort(sun)}`;
+        })();
 
   return (
     <div className="dashboard">
@@ -85,7 +142,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* ── 中段: 危険ゾーン ── */}
+      {/* ── 危険ゾーン ── */}
       <section className="dash-section">
         <h2 className={`dash-section-title ${dangerTotal > 0 ? "dash-section-title--alert" : ""}`}>
           危険ゾーン
@@ -147,7 +204,51 @@ export function DashboardPage() {
         )}
       </section>
 
-      {/* ── 下段: 分野別進捗 ── */}
+      {/* ── カレンダー ── */}
+      <section className="dash-section">
+        <div className="cal-toolbar">
+          <h2 className="dash-section-title" style={{ margin: 0 }}>カレンダー</h2>
+          <div className="cal-view-toggle">
+            <button
+              className={`cal-view-btn ${calView === "week" ? "cal-view-btn--active" : ""}`}
+              onClick={() => setCalView("week")}
+            >
+              週
+            </button>
+            <button
+              className={`cal-view-btn ${calView === "month" ? "cal-view-btn--active" : ""}`}
+              onClick={() => setCalView("month")}
+            >
+              月
+            </button>
+          </div>
+        </div>
+
+        <div className="cal-nav">
+          <button className="cal-nav-btn" onClick={goCalPrev}>&lt;</button>
+          <button className="cal-nav-today" onClick={goCalToday}>今日</button>
+          <span className="cal-nav-title">{calTitle}</span>
+          <button className="cal-nav-btn" onClick={goCalNext}>&gt;</button>
+        </div>
+
+        {calView === "month" ? (
+          <CalendarMonth
+            year={calYear}
+            month={calMonth}
+            tasks={tasks}
+            onSelectDate={setSelectedDate}
+          />
+        ) : (
+          <CalendarWeek
+            refDate={calRef}
+            tasks={tasks}
+            onSelectDate={setSelectedDate}
+            onToggleDone={handleToggleDone}
+          />
+        )}
+      </section>
+
+      {/* ── 分野別進捗 ── */}
       {groupProgress.length > 0 && (
         <section className="dash-section">
           <h2 className="dash-section-title">分野別進捗</h2>
@@ -177,7 +278,15 @@ export function DashboardPage() {
         </section>
       )}
 
-      {/* Drawer for editing */}
+      {/* Drawers */}
+      <DayTasksDrawer
+        date={selectedDate}
+        tasks={tasks}
+        onToggleDone={handleToggleDone}
+        onSaved={load}
+        onClose={() => setSelectedDate(null)}
+      />
+
       <TaskEditDrawer
         task={editingTask}
         onClose={() => setEditingTask(null)}
