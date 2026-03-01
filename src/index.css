@@ -2132,3 +2132,215 @@ textarea {
     font-size: 0.5rem;
   }
 }
+
+/* ── Workspace (Kanban board) ── */
+.ws-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ws-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: var(--c-primary);
+  color: #fff;
+  border-radius: 999px;
+  margin-left: 0.25rem;
+}
+
+.ws-board {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  align-items: flex-start;
+}
+
+.ws-col {
+  flex: 0 0 16rem;
+  min-width: 14rem;
+  max-width: 20rem;
+  background: var(--c-surface);
+  border: 2px solid var(--c-border-light);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.ws-col--drag-over {
+  border-color: var(--c-primary);
+  background: var(--c-primary-light);
+}
+
+.ws-col-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.65rem;
+  border-bottom: 1px solid var(--c-border-light);
+}
+
+.ws-col-name {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-col-count {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--c-primary);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.ws-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.ws-col-add {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background var(--transition), color var(--transition);
+}
+
+.ws-col-add:hover {
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+  border-color: var(--c-primary);
+  transform: none;
+}
+
+.ws-col-body {
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 3rem;
+}
+
+.ws-col-empty {
+  color: var(--c-text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* Workspace task card */
+.ws-card {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  cursor: grab;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+
+.ws-card:hover {
+  border-color: var(--c-border);
+  box-shadow: var(--shadow-card);
+}
+
+.ws-card:active {
+  cursor: grabbing;
+}
+
+.ws-card--done {
+  opacity: 0.55;
+  background: var(--c-done-bg);
+}
+
+.ws-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ws-card-priority {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-secondary);
+}
+
+.ws-card-title {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ws-card-title:hover {
+  color: var(--c-primary);
+}
+
+.ws-card-title--done {
+  text-decoration: line-through;
+  color: var(--c-text-muted);
+}
+
+.ws-card-due {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+  margin-top: 0.15rem;
+  padding-left: 1.15rem;
+}
+
+.ws-card-due--danger {
+  color: var(--c-danger);
+  font-weight: 600;
+}
+
+/* Responsive: single column on mobile */
+@media (max-width: 600px) {
+  .ws-board {
+    flex-direction: column;
+  }
+
+  .ws-col {
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}
