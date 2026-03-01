@@ -13,11 +13,13 @@ interface TaskDrawerProps {
   task: Task | null | undefined;
   /** Default dueDate for create mode */
   defaultDueDate?: string;
+  /** Default groupId for create mode */
+  defaultGroupId?: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function TaskDrawer({ task, defaultDueDate, onClose, onSaved }: TaskDrawerProps) {
+export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSaved }: TaskDrawerProps) {
   const isOpen = task !== null;
   const isCreate = task === undefined;
 
@@ -49,7 +51,7 @@ export function TaskDrawer({ task, defaultDueDate, onClose, onSaved }: TaskDrawe
       setDueDate(defaultDueDate ?? "");
       setPriority("med");
       setStatus("todo");
-      setGroupId("");
+      setGroupId(defaultGroupId ?? "");
       setProjectId("");
       setBucketIds([]);
       setTitleError(false);
@@ -65,7 +67,7 @@ export function TaskDrawer({ task, defaultDueDate, onClose, onSaved }: TaskDrawe
       setBucketIds(task.bucketIds);
       setTitleError(false);
     }
-  }, [task, defaultDueDate]);
+  }, [task, defaultDueDate, defaultGroupId]);
 
   const filteredProjects = useMemo(
     () => (groupId ? projects.filter((p) => p.groupId === groupId) : projects),
