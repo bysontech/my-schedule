@@ -14,7 +14,7 @@ import { getDueBucket } from "../utils/dateBuckets";
 import { TaskRow } from "../components/TaskRow";
 import { TaskDrawer } from "../components/TaskDrawer";
 import { CalendarMonth } from "../components/CalendarMonth";
-import { CalendarWeek } from "../components/CalendarWeek";
+import { CalendarWeekGrid } from "../components/CalendarWeekGrid";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
 import { Toast } from "../components/Toast";
 
@@ -277,11 +277,10 @@ export function DashboardPage() {
             onSelectDate={setSelectedDate}
           />
         ) : (
-          <CalendarWeek
+          <CalendarWeekGrid
             refDate={calRef}
             tasks={tasks}
             onSelectDate={setSelectedDate}
-            onToggleDone={handleToggleDone}
           />
         )}
       </section>
