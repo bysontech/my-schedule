@@ -1205,71 +1205,156 @@ textarea {
   color: var(--c-success);
 }
 
-/* Week view */
-.cal-week {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+/* Week grid view (CalendarWeekGrid) */
+.cwg-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 0.25rem;
 }
 
-.cal-week-day {
+.cwg-dow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding: 0.2rem 0;
+}
+
+.cwg-dow--weekend {
+  color: var(--c-danger);
+}
+
+.cwg-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.cwg-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.35rem 0.3rem;
+  min-height: 5.5rem;
   background: var(--c-surface);
   border: 1px solid var(--c-border-light);
   border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.cal-week-day--today {
-  border-color: var(--c-primary);
-}
-
-.cal-week-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.6rem;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
   cursor: pointer;
-  transition: background var(--transition);
+  transition: background var(--transition), border-color var(--transition);
+  text-align: left;
 }
 
-.cal-week-header:hover {
+.cwg-cell:hover {
   background: var(--c-surface-hover);
+  border-color: var(--c-border);
   transform: none;
 }
 
-.cal-week-dow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--c-text-muted);
-  width: 1.2rem;
+.cwg-cell--today {
+  border-color: var(--c-primary);
+  background: var(--c-primary-light);
 }
 
-.cal-week-date {
+/* Cell header: day number + counts */
+.cwg-cell-head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  line-height: 1;
+}
+
+.cwg-cell-day {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--c-text);
 }
 
-.cal-week-day--today .cal-week-date {
+.cwg-cell--today .cwg-cell-day {
   color: var(--c-primary);
 }
 
-.cal-week-badge {
-  font-size: 0.65rem;
+.cwg-cell-count {
+  font-size: 0.6rem;
   font-weight: 700;
   color: #fff;
   background: var(--c-primary);
   border-radius: 999px;
-  padding: 0.05rem 0.35rem;
+  padding: 0.05rem 0.3rem;
   line-height: 1.3;
 }
 
-.cal-week-tasks {
-  padding: 0 0.3rem 0.3rem;
+.cwg-cell-high {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--c-danger);
+  line-height: 1;
+}
+
+/* Compact task items inside cells */
+.cwg-cell-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  overflow: hidden;
+}
+
+.cwg-task {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.cwg-task--done {
+  opacity: 0.4;
+}
+
+.cwg-task-icon {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: var(--c-text-muted);
+  width: 0.8rem;
+  text-align: center;
+}
+
+.cwg-task-title {
+  font-size: 0.68rem;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.cwg-task-title--danger {
+  color: var(--c-danger);
+}
+
+/* Responsive: stack on narrow screens */
+@media (max-width: 600px) {
+  .cwg-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.15rem;
+  }
+
+  .cwg-cell {
+    padding: 0.25rem 0.15rem;
+    min-height: 4rem;
+  }
+
+  .cwg-cell-day {
+    font-size: 0.72rem;
+  }
+
+  .cwg-task-title {
+    font-size: 0.6rem;
+  }
+
+  .cwg-cell-count {
+    font-size: 0.55rem;
+    padding: 0.02rem 0.2rem;
+  }
 }
 
 /* DayDrawer */
