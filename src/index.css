@@ -2000,3 +2000,135 @@ textarea {
   opacity: 1;
   transform: none;
 }
+
+/* ── Planning Page ── */
+.planning-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.planning-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.planning-filter-active {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--c-primary);
+}
+
+.planning-calendar {
+  margin-top: 0.25rem;
+}
+
+/* ── CalendarYear ── */
+.cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.cal-year-month {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.cal-year-month:hover {
+  background: var(--c-surface-hover);
+  border-color: var(--c-border);
+  transform: none;
+}
+
+.cal-year-month--current {
+  border-color: var(--c-primary);
+  background: var(--c-primary-light);
+}
+
+.cal-year-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.cal-year-month-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.cal-year-month-count {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--c-primary);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  line-height: 1.4;
+}
+
+/* Mini month grid inside year view */
+.cal-year-mini-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 0.1rem;
+}
+
+.cal-year-mini-dow {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  line-height: 1.6;
+}
+
+.cal-year-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+}
+
+.cal-year-mini-day {
+  font-size: 0.55rem;
+  color: var(--c-text-secondary);
+  line-height: 1.6;
+}
+
+.cal-year-mini-day--empty {
+  visibility: hidden;
+}
+
+.cal-year-mini-day--today {
+  font-weight: 700;
+  color: var(--c-primary);
+  background: var(--c-primary-light);
+  border-radius: 2px;
+}
+
+.cal-year-mini-day--has-task {
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+/* Year view responsive */
+@media (max-width: 600px) {
+  .cal-year-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.35rem;
+  }
+
+  .cal-year-mini-day,
+  .cal-year-mini-dow {
+    font-size: 0.5rem;
+  }
+}
