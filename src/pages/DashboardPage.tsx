@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "../domain/task";
 import type { Group } from "../domain/master";
@@ -12,26 +12,39 @@ import {
 } from "../utils/taskAggregations";
 import { getDueBucket } from "../utils/dateBuckets";
 import { TaskRow } from "../components/TaskRow";
-import { TaskEditDrawer } from "../components/TaskEditDrawer";
+import { TaskDrawer } from "../components/TaskDrawer";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { CalendarWeek } from "../components/CalendarWeek";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
+import { Toast } from "../components/Toast";
 
 type CalendarView = "week" | "month";
+
+// TaskDrawer state: null=closed, undefined=create, Task=edit
+type TaskDrawerState = Task | null | undefined;
+
+interface UndoEntry {
+  taskId: string;
+  message: string;
+}
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
 
   // Calendar state
   const [calView, setCalView] = useState<CalendarView>("week");
-  const [calRef, setCalRef] = useState(() => new Date()); // reference date for week/month nav
+  const [calRef, setCalRef] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  // Undo
+  const [undoEntry, setUndoEntry] = useState<UndoEntry | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
   const calYear = calRef.getFullYear();
-  const calMonth = calRef.getMonth() + 1; // 1-12
+  const calMonth = calRef.getMonth() + 1;
 
   const load = useCallback(() => {
     listTasks().then(setTasks);
@@ -49,9 +62,25 @@ export function DashboardPage() {
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
 
   const handleToggleDone = useCallback(async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
     await toggleDone(id);
     load();
-  }, [load]);
+    if (task) {
+      const wasDone = task.status === "done";
+      setUndoEntry({
+        taskId: id,
+        message: wasDone ? "未完了に戻しました" : "完了にしました",
+      });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    }
+  }, [load, tasks]);
+
+  const handleUndo = useCallback(async () => {
+    if (!undoEntry) return;
+    await toggleDone(undoEntry.taskId);
+    setUndoEntry(null);
+    load();
+  }, [undoEntry, load]);
 
   // Quick list: overdue + today (not done), max 5 each
   const quickOverdue = useMemo(
@@ -117,6 +146,15 @@ export function DashboardPage() {
 
   return (
     <div className="dashboard">
+      {/* ── FAB: + New Task ── */}
+      <button
+        className="fab"
+        onClick={() => setTaskDrawerState(undefined)}
+        aria-label="タスク作成"
+      >
+        +
+      </button>
+
       {/* ── 上段: 戦略サマリー ── */}
       <section className="dash-section">
         <h2 className="dash-section-title">戦略サマリー</h2>
@@ -182,7 +220,7 @@ export function DashboardPage() {
                     key={t.id}
                     task={t}
                     onToggleDone={handleToggleDone}
-                    onClickTitle={(task) => setEditingTask(task)}
+                    onClickTitle={(task) => setTaskDrawerState(task)}
                   />
                 ))}
               </div>
@@ -195,7 +233,7 @@ export function DashboardPage() {
                     key={t.id}
                     task={t}
                     onToggleDone={handleToggleDone}
-                    onClickTitle={(task) => setEditingTask(task)}
+                    onClickTitle={(task) => setTaskDrawerState(task)}
                   />
                 ))}
               </div>
@@ -287,11 +325,20 @@ export function DashboardPage() {
         onClose={() => setSelectedDate(null)}
       />
 
-      <TaskEditDrawer
-        task={editingTask}
-        onClose={() => setEditingTask(null)}
+      <TaskDrawer
+        task={taskDrawerState}
+        onClose={() => setTaskDrawerState(null)}
         onSaved={load}
       />
+
+      {/* Undo Toast */}
+      {undoEntry && (
+        <Toast
+          message={undoEntry.message}
+          action={{ label: "元に戻す", onClick: handleUndo }}
+          onDismiss={() => setUndoEntry(null)}
+        />
+      )}
     </div>
   );
 }

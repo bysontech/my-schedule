@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import { priorityOrder } from "../domain/task";
 import { listTasks, toggleDone, softDeleteTask } from "../db/tasksRepo";
@@ -11,8 +11,12 @@ import { listBuckets } from "../db/bucketsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
 import { TaskRow } from "../components/TaskRow";
 import { KebabMenu, type KebabItem } from "../components/KebabMenu";
+import { TaskDrawer } from "../components/TaskDrawer";
 
 type SortKey = "dueDate" | "priority" | "updatedAt";
+
+// TaskDrawer state: null=closed, undefined=create, Task=edit
+type TaskDrawerState = Task | null | undefined;
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
   high: "High",
@@ -31,12 +35,13 @@ const VALID_PRIORITIES = new Set<string>(["high", "med", "low"]);
 const VALID_DUE_BUCKETS = new Set<string>(["overdue", "today", "thisWeek", "thisMonth"]);
 
 export function TasksPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
+
+  const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
 
   const qStatus = searchParams.get("status");
   const qPriority = searchParams.get("priority");
@@ -193,13 +198,20 @@ export function TasksPage() {
         )}
       </div>
 
-      {/* Filter toggle */}
+      {/* Filter toggle + new */}
       <div className="planning-toolbar">
         <button
           className={`btn-sm ${showFilter ? "btn-secondary" : "btn-ghost"}`}
           onClick={() => setShowFilter((v) => !v)}
         >
           {showFilter ? "フィルタを隠す" : "詳細フィルタ"}
+        </button>
+        <button
+          className="btn-sm"
+          onClick={() => setTaskDrawerState(undefined)}
+          style={{ marginLeft: "0.5rem" }}
+        >
+          + 新規作成
         </button>
         <div className="filter-item" style={{ marginLeft: "auto" }}>
           <select
@@ -312,7 +324,7 @@ export function TasksPage() {
       {sorted.length === 0 ? (
         <div className="empty-state">
           <p>タスクがありません</p>
-          <button onClick={() => navigate("/tasks/new")} style={{ marginTop: "0.75rem" }}>
+          <button onClick={() => setTaskDrawerState(undefined)} style={{ marginTop: "0.75rem" }}>
             + 最初のタスクを作成
           </button>
         </div>
@@ -323,7 +335,7 @@ export function TasksPage() {
             const isExpanded = expandedId === task.id;
 
             const kebabItems: KebabItem[] = [
-              { label: "編集", onClick: () => navigate(`/tasks/${task.id}/edit`) },
+              { label: "編集", onClick: () => setTaskDrawerState(task) },
               { label: "削除", danger: true, onClick: () => handleDelete(task.id) },
             ];
 
@@ -374,6 +386,13 @@ export function TasksPage() {
           })}
         </div>
       )}
+
+      {/* Task Drawer (create/edit) */}
+      <TaskDrawer
+        task={taskDrawerState}
+        onClose={() => setTaskDrawerState(null)}
+        onSaved={load}
+      />
     </div>
   );
 }

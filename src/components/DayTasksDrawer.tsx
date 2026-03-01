@@ -3,7 +3,10 @@ import type { Task } from "../domain/task";
 import { Drawer } from "./Drawer";
 import { TaskRow } from "./TaskRow";
 import { KebabMenu, type KebabItem } from "./KebabMenu";
-import { TaskEditDrawer } from "./TaskEditDrawer";
+import { TaskDrawer } from "./TaskDrawer";
+
+// TaskDrawer state: null=closed, undefined=create, Task=edit
+type TaskDrawerState = Task | null | undefined;
 
 interface DayTasksDrawerProps {
   date: string | null;   // YYYY-MM-DD or null (closed)
@@ -14,7 +17,7 @@ interface DayTasksDrawerProps {
 }
 
 export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: DayTasksDrawerProps) {
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
 
   const dayTasks = useMemo(() => {
     if (!date) return [];
@@ -28,6 +31,14 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
     <>
       <Drawer open={!!date} onClose={onClose} title={date ?? ""}>
         <div className="day-drawer">
+          <button
+            className="btn-sm"
+            onClick={() => setTaskDrawerState(undefined)}
+            style={{ alignSelf: "flex-start", marginBottom: "0.5rem" }}
+          >
+            + タスク作成
+          </button>
+
           {dayTasks.length === 0 ? (
             <p className="day-drawer-empty">この日の期限タスクはありません</p>
           ) : (
@@ -36,7 +47,7 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
                 <div className="day-drawer-section">
                   {activeTasks.map((t) => {
                     const items: KebabItem[] = [
-                      { label: "編集", onClick: () => setEditingTask(t) },
+                      { label: "編集", onClick: () => setTaskDrawerState(t) },
                     ];
                     return (
                       <TaskRow
@@ -54,7 +65,7 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
                   <span className="day-drawer-section-label">完了</span>
                   {doneTasks.map((t) => {
                     const items: KebabItem[] = [
-                      { label: "編集", onClick: () => setEditingTask(t) },
+                      { label: "編集", onClick: () => setTaskDrawerState(t) },
                     ];
                     return (
                       <TaskRow
@@ -72,10 +83,11 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
         </div>
       </Drawer>
 
-      {/* Nested edit drawer */}
-      <TaskEditDrawer
-        task={editingTask}
-        onClose={() => setEditingTask(null)}
+      {/* Nested task drawer (create/edit) */}
+      <TaskDrawer
+        task={taskDrawerState}
+        defaultDueDate={date ?? undefined}
+        onClose={() => setTaskDrawerState(null)}
         onSaved={onSaved}
       />
     </>
