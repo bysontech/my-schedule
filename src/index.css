@@ -855,11 +855,12 @@ textarea {
 /* ── TaskRow (shared) ── */
 .taskrow {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0.6rem;
-  padding: 0.45rem 0.5rem;
+  padding: 0;
   border-radius: var(--radius-sm);
   transition: background var(--transition);
+  overflow: hidden;
 }
 
 .taskrow:hover {
@@ -877,12 +878,20 @@ textarea {
   background: var(--c-primary-light);
 }
 
-.taskrow-priority {
+/* Priority color bar (left edge) */
+.taskrow-pbar {
   flex-shrink: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--c-text-secondary);
+  width: 4px;
+  min-height: 100%;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.taskrow-pbar--high { background: var(--c-high); }
+.taskrow-pbar--med  { background: var(--c-med); }
+.taskrow-pbar--low  { background: var(--c-low); }
+
+.taskrow > .task-checkbox {
+  margin-left: 0.45rem;
 }
 
 .taskrow-title {
@@ -894,6 +903,7 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: default;
+  padding: 0.45rem 0;
 }
 
 .taskrow-title[role="button"] {
@@ -909,6 +919,7 @@ textarea {
   flex-shrink: 0;
   font-size: 0.78rem;
   color: var(--c-text-muted);
+  padding-right: 0.5rem;
 }
 
 .taskrow-due--danger {
@@ -1310,13 +1321,16 @@ textarea {
   opacity: 0.4;
 }
 
-.cwg-task-icon {
+.cwg-task-bar {
   flex-shrink: 0;
-  font-size: 0.65rem;
-  color: var(--c-text-muted);
-  width: 0.8rem;
-  text-align: center;
+  width: 3px;
+  align-self: stretch;
+  border-radius: 1px;
 }
+
+.cwg-task-bar--high { background: var(--c-high); }
+.cwg-task-bar--med  { background: var(--c-med); }
+.cwg-task-bar--low  { background: var(--c-low); }
 
 .cwg-task-title {
   font-size: 0.68rem;
@@ -2262,10 +2276,12 @@ textarea {
 
 /* Workspace task card */
 .ws-card {
+  display: flex;
+  align-items: stretch;
   background: var(--c-bg);
   border: 1px solid var(--c-border-light);
   border-radius: var(--radius-sm);
-  padding: 0.4rem 0.5rem;
+  overflow: hidden;
   cursor: grab;
   transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
@@ -2284,18 +2300,26 @@ textarea {
   background: var(--c-done-bg);
 }
 
+/* Priority color bar (left edge of card) */
+.ws-card-pbar {
+  flex-shrink: 0;
+  width: 4px;
+}
+
+.ws-card-pbar--high { background: var(--c-high); }
+.ws-card-pbar--med  { background: var(--c-med); }
+.ws-card-pbar--low  { background: var(--c-low); }
+
+.ws-card-content {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+}
+
 .ws-card-row {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-}
-
-.ws-card-priority {
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--c-text-secondary);
 }
 
 .ws-card-title {
@@ -2323,7 +2347,7 @@ textarea {
   font-size: 0.7rem;
   color: var(--c-text-muted);
   margin-top: 0.15rem;
-  padding-left: 1.15rem;
+  padding-left: 0.5rem;
 }
 
 .ws-card-due--danger {

@@ -5,12 +5,8 @@ export default function App() {
 
   const navLinks: { to: string; label: string }[] = [
     { to: "/dashboard", label: "Home" },
-    { to: "/focus", label: "Focus" },
-    { to: "/tasks", label: "Tasks" },
-    { to: "/planning", label: "Planning" },
     { to: "/workspace", label: "Workspace" },
-    { to: "/recurrence", label: "Repeat" },
-    { to: "/masters", label: "Masters" },
+    { to: "/planning", label: "Planning" },
     { to: "/settings", label: "Settings" },
   ];
 

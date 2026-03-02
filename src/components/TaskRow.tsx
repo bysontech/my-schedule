@@ -1,7 +1,6 @@
 import { forwardRef } from "react";
 import type { Task } from "../domain/task";
 import { getDueBucket } from "../utils/dateBuckets";
-import { priorityIcon } from "../utils/priorityIcon";
 
 interface TaskRowProps {
   task: Task;
@@ -27,6 +26,7 @@ export const TaskRow = forwardRef<HTMLDivElement, TaskRowProps>(
 
     return (
       <div ref={ref} className={classes}>
+        <span className={`taskrow-pbar taskrow-pbar--${task.priority}`} />
         <input
           type="checkbox"
           className="task-checkbox"
@@ -36,7 +36,6 @@ export const TaskRow = forwardRef<HTMLDivElement, TaskRowProps>(
             onToggleDone(task.id);
           }}
         />
-        <span className="taskrow-priority">{priorityIcon(task.priority)}</span>
         <span
           className={`taskrow-title ${isDone ? "taskrow-title--done" : ""}`}
           onClick={() => onClickTitle?.(task)}
