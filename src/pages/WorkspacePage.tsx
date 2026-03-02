@@ -10,8 +10,6 @@ import { TaskDrawer } from "../components/TaskDrawer";
 import { MasterDrawer } from "../components/MasterDrawer";
 import { Toast } from "../components/Toast";
 
-const PRIORITY_ICON: Record<TaskPriority, string> = { high: "↑", med: "→", low: "↓" };
-
 type PeriodFilter = "all" | "week" | "month";
 
 /** Get Monday-start week range for today */
@@ -329,25 +327,27 @@ export function WorkspacePage() {
                       }}
                       onDragEnd={handleDragEnd}
                     >
-                      <div className="ws-card-row">
-                        <span className="ws-card-priority">{PRIORITY_ICON[task.priority]}</span>
-                        <span
-                          className={`ws-card-title ${isDone ? "ws-card-title--done" : ""}`}
-                          role="button"
-                          onClick={() => handleEditTask(task)}
-                        >
-                          {task.title}
-                        </span>
-                        <KebabMenu items={[
-                          { label: "編集", onClick: () => handleEditTask(task) },
-                          { label: "削除", danger: true, onClick: () => handleDeleteTask(task) },
-                        ]} />
+                      <span className={`ws-card-pbar ws-card-pbar--${task.priority}`} />
+                      <div className="ws-card-content">
+                        <div className="ws-card-row">
+                          <span
+                            className={`ws-card-title ${isDone ? "ws-card-title--done" : ""}`}
+                            role="button"
+                            onClick={() => handleEditTask(task)}
+                          >
+                            {task.title}
+                          </span>
+                          <KebabMenu items={[
+                            { label: "編集", onClick: () => handleEditTask(task) },
+                            { label: "削除", danger: true, onClick: () => handleDeleteTask(task) },
+                          ]} />
+                        </div>
+                        {task.dueDate && (
+                          <span className={`ws-card-due ${isOverdue || isToday ? "ws-card-due--danger" : ""}`}>
+                            {task.dueDate}
+                          </span>
+                        )}
                       </div>
-                      {task.dueDate && (
-                        <span className={`ws-card-due ${isOverdue || isToday ? "ws-card-due--danger" : ""}`}>
-                          {task.dueDate}
-                        </span>
-                      )}
                     </div>
                   );
                 })}

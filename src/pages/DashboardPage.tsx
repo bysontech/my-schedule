@@ -188,21 +188,21 @@ export function DashboardPage() {
         <div className="dash-cards">
           <button
             className={`dash-card ${danger.overdue > 0 ? "dash-card--danger" : ""}`}
-            onClick={() => navigate("/focus")}
+            onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.overdue}</span>
             <span className="dash-card-label">期限切れ</span>
           </button>
           <button
             className={`dash-card ${danger.today > 0 ? "dash-card--danger" : ""}`}
-            onClick={() => navigate("/focus")}
+            onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.today}</span>
             <span className="dash-card-label">今日期限</span>
           </button>
           <button
             className={`dash-card ${danger.thisWeekHigh > 0 ? "dash-card--caution" : ""}`}
-            onClick={() => navigate("/focus")}
+            onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.thisWeekHigh}</span>
             <span className="dash-card-label">今週 High</span>
@@ -295,9 +295,7 @@ export function DashboardPage() {
                 key={gp.groupId ?? "__null__"}
                 className="dash-group-row"
                 onClick={() =>
-                  gp.groupId
-                    ? navigate(`/tasks?groupId=${gp.groupId}`)
-                    : navigate("/tasks")
+                  navigate("/workspace")
                 }
               >
                 <span className="dash-group-name">{gp.groupName}</span>

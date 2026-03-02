@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import type { Task } from "../domain/task";
 import { getWeekDays, tasksByDueDateMap, weekdayLabel } from "../utils/calendar";
-import { priorityIcon } from "../utils/priorityIcon";
 import { getDueBucket } from "../utils/dateBuckets";
 
 interface CalendarWeekGridProps {
@@ -66,7 +65,7 @@ export function CalendarWeekGrid({ refDate, tasks, onSelectDate }: CalendarWeekG
                       key={t.id}
                       className={`cwg-task ${isDone ? "cwg-task--done" : ""}`}
                     >
-                      <span className="cwg-task-icon">{priorityIcon(t.priority)}</span>
+                      <span className={`cwg-task-bar cwg-task-bar--${t.priority}`} />
                       <span className={`cwg-task-title ${dueDanger ? "cwg-task-title--danger" : ""}`}>
                         {t.title}
                       </span>
