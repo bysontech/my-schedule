@@ -2158,6 +2158,22 @@ textarea {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ws-single-selector {
+  margin-bottom: 0.25rem;
+}
+
+.ws-single-selector select {
+  min-width: 12rem;
+}
+
+.ws-empty-prompt {
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 2rem 0;
 }
 
 .ws-filter-badge {
