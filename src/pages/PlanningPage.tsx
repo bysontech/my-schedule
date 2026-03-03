@@ -8,12 +8,18 @@ import { listBuckets } from "../db/bucketsRepo";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { CalendarWeekGrid } from "../components/CalendarWeekGrid";
 import { CalendarYear } from "../components/CalendarYear";
+import { CalendarDayTimeline } from "../components/CalendarDayTimeline";
+import { TaskDrawer } from "../components/TaskDrawer";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
 
-type ViewMode = "week" | "month" | "year";
+type ViewMode = "week" | "month" | "year" | "day";
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = { high: "High", med: "Med", low: "Low" };
 const STATUS_LABELS: Record<TaskStatus, string> = { todo: "未着手", in_progress: "進行中", done: "完了" };
+
+function fmtDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
 
 export function PlanningPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -21,10 +27,15 @@ export function PlanningPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
 
-  // View state (preserved across drawer open/close)
+  // View state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [cursorDate, setCursorDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // TaskDrawer state for day view create/edit
+  type TaskDrawerState = Task | null | undefined;
+  const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
+  const [taskDrawerDefaultDate, setTaskDrawerDefaultDate] = useState<string | undefined>();
 
   // Filter state
   const [showFilter, setShowFilter] = useState(false);
@@ -78,6 +89,7 @@ export function PlanningPage() {
       const d = new Date(prev);
       if (viewMode === "year") d.setFullYear(d.getFullYear() - 1);
       else if (viewMode === "month") d.setMonth(d.getMonth() - 1);
+      else if (viewMode === "day") d.setDate(d.getDate() - 1);
       else d.setDate(d.getDate() - 7);
       return d;
     });
@@ -88,6 +100,7 @@ export function PlanningPage() {
       const d = new Date(prev);
       if (viewMode === "year") d.setFullYear(d.getFullYear() + 1);
       else if (viewMode === "month") d.setMonth(d.getMonth() + 1);
+      else if (viewMode === "day") d.setDate(d.getDate() + 1);
       else d.setDate(d.getDate() + 7);
       return d;
     });
@@ -98,6 +111,7 @@ export function PlanningPage() {
   const navTitle = (() => {
     if (viewMode === "year") return `${cursorYear}年`;
     if (viewMode === "month") return `${cursorYear}年${cursorMonth}月`;
+    if (viewMode === "day") return fmtDate(cursorDate);
     // week
     const d = new Date(cursorDate);
     const dow = (d.getDay() + 6) % 7;
@@ -120,19 +134,30 @@ export function PlanningPage() {
 
   const hasActiveFilter = filterGroupId !== "all" || filterProjectId !== "all" || filterBucketId !== "all" || filterPriority !== "all" || filterStatus !== "all";
 
+  // Day view handlers
+  const handleDaySelectTask = (task: Task) => {
+    setTaskDrawerDefaultDate(undefined);
+    setTaskDrawerState(task);
+  };
+
+  const handleDayCreateTask = (date: string) => {
+    setTaskDrawerDefaultDate(date);
+    setTaskDrawerState(undefined);
+  };
+
   return (
     <div className="planning-page">
       {/* Toolbar: view toggle */}
       <div className="cal-toolbar">
         <h2 className="dash-section-title" style={{ margin: 0 }}>Planning</h2>
         <div className="cal-view-toggle">
-          {(["week", "month", "year"] as ViewMode[]).map((mode) => (
+          {(["week", "month", "year", "day"] as ViewMode[]).map((mode) => (
             <button
               key={mode}
               className={`cal-view-btn ${viewMode === mode ? "cal-view-btn--active" : ""}`}
               onClick={() => setViewMode(mode)}
             >
-              {mode === "week" ? "週" : mode === "month" ? "月" : "年"}
+              {mode === "week" ? "週" : mode === "month" ? "月" : mode === "year" ? "年" : "日"}
             </button>
           ))}
         </div>
@@ -241,15 +266,31 @@ export function PlanningPage() {
             onSelectMonth={handleSelectMonth}
           />
         )}
+        {viewMode === "day" && (
+          <CalendarDayTimeline
+            date={fmtDate(cursorDate)}
+            tasks={filteredTasks}
+            onSelectTask={handleDaySelectTask}
+            onCreateTask={handleDayCreateTask}
+          />
+        )}
       </div>
 
-      {/* DayDrawer (date selection → task list → create/edit) */}
+      {/* DayDrawer (date selection from week/month → task list → create/edit) */}
       <DayTasksDrawer
         date={selectedDate}
         tasks={filteredTasks}
         onToggleDone={handleToggleDone}
         onSaved={load}
         onClose={() => setSelectedDate(null)}
+      />
+
+      {/* TaskDrawer for day view create/edit */}
+      <TaskDrawer
+        task={taskDrawerState}
+        defaultDueDate={taskDrawerDefaultDate}
+        onClose={() => setTaskDrawerState(null)}
+        onSaved={load}
       />
     </div>
   );

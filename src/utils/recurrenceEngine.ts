@@ -101,6 +101,8 @@ export async function ensureNextInstanceForAllActiveTemplates(): Promise<void> {
       title: tmpl.title,
       memo: tmpl.memo,
       dueDate,
+      startAt: null,
+      endAt: null,
       priority: tmpl.priority,
       status: "todo",
       groupId: tmpl.groupId,

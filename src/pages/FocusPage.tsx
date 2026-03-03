@@ -95,6 +95,8 @@ export function FocusPage() {
       title,
       memo: null,
       dueDate: todayStr,
+      startAt: null,
+      endAt: null,
       priority: "med",
       status: "todo",
       groupId: null,

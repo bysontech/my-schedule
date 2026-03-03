@@ -6,6 +6,8 @@ export interface Task {
   title: string;
   memo: string | null;
   dueDate: string | null; // YYYY-MM-DD
+  startAt: string | null; // HH:mm
+  endAt: string | null;   // HH:mm
   priority: TaskPriority;
   status: TaskStatus;
   groupId: string | null;
@@ -22,6 +24,8 @@ export function createEmptyTask(): Omit<Task, "id" | "createdAt" | "updatedAt"> 
     title: "",
     memo: null,
     dueDate: null,
+    startAt: null,
+    endAt: null,
     priority: "med",
     status: "todo",
     groupId: null,
