@@ -26,12 +26,15 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("med");
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [groupId, setGroupId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [bucketIds, setBucketIds] = useState<string[]>([]);
   const [titleError, setTitleError] = useState(false);
+  const [timeError, setTimeError] = useState(false);
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -49,23 +52,29 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
       setTitle("");
       setMemo("");
       setDueDate(defaultDueDate ?? "");
+      setStartAt("");
+      setEndAt("");
       setPriority("med");
       setStatus("todo");
       setGroupId(defaultGroupId ?? "");
       setProjectId("");
       setBucketIds([]);
       setTitleError(false);
+      setTimeError(false);
     } else {
       // edit mode
       setTitle(task.title);
       setMemo(task.memo ?? "");
       setDueDate(task.dueDate ?? "");
+      setStartAt(task.startAt ?? "");
+      setEndAt(task.endAt ?? "");
       setPriority(task.priority);
       setStatus(task.status);
       setGroupId(task.groupId ?? "");
       setProjectId(task.projectId ?? "");
       setBucketIds(task.bucketIds);
       setTitleError(false);
+      setTimeError(false);
     }
   }, [task, defaultDueDate, defaultGroupId]);
 
@@ -85,6 +94,11 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
       setTitleError(true);
       return;
     }
+    // Validate startAt <= endAt if both present
+    if (startAt && endAt && startAt > endAt) {
+      setTimeError(true);
+      return;
+    }
     const now = new Date().toISOString();
 
     if (isCreate) {
@@ -94,6 +108,8 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
         title: title.trim(),
         memo: memo.trim() || null,
         dueDate: dueDate || null,
+        startAt: startAt || null,
+        endAt: endAt || null,
         priority,
         status,
         groupId: groupId || null,
@@ -109,6 +125,8 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
         title: title.trim(),
         memo: memo.trim() || null,
         dueDate: dueDate || null,
+        startAt: startAt || null,
+        endAt: endAt || null,
         priority,
         status,
         groupId: groupId || null,
@@ -144,6 +162,35 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, onClose, onSa
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">開始時刻</label>
+          <div className="form-time-row">
+            <input
+              type="time"
+              value={startAt}
+              onChange={(e) => { setStartAt(e.target.value); setTimeError(false); }}
+            />
+            {startAt && (
+              <button type="button" className="form-time-clear" onClick={() => setStartAt("")}>×</button>
+            )}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">終了時刻</label>
+          <div className="form-time-row">
+            <input
+              type="time"
+              value={endAt}
+              onChange={(e) => { setEndAt(e.target.value); setTimeError(false); }}
+            />
+            {endAt && (
+              <button type="button" className="form-time-clear" onClick={() => setEndAt("")}>×</button>
+            )}
+          </div>
+          {timeError && <p className="form-error">終了は開始より後にしてください</p>}
         </div>
 
         <div className="form-group">

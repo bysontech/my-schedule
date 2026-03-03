@@ -30,4 +30,18 @@ db.version(3).stores({
   recurrenceTemplates: "id, isActive, recurrenceType",
 });
 
+// v4: add startAt/endAt to tasks (existing records get null via upgrade)
+db.version(4).stores({
+  tasks: "id, dueDate, status, priority, isDeleted, updatedAt, recurrenceTemplateId",
+  groups: "id, name",
+  projects: "id, name, groupId",
+  buckets: "id, name",
+  recurrenceTemplates: "id, isActive, recurrenceType",
+}).upgrade((tx) => {
+  return tx.table("tasks").toCollection().modify((task) => {
+    if (task.startAt === undefined) task.startAt = null;
+    if (task.endAt === undefined) task.endAt = null;
+  });
+});
+
 export { db };

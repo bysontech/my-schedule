@@ -15,10 +15,11 @@ import { TaskRow } from "../components/TaskRow";
 import { TaskDrawer } from "../components/TaskDrawer";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { CalendarWeekGrid } from "../components/CalendarWeekGrid";
+import { CalendarDayTimeline } from "../components/CalendarDayTimeline";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
 import { Toast } from "../components/Toast";
 
-type CalendarView = "week" | "month";
+type CalendarView = "week" | "month" | "day";
 
 // TaskDrawer state: null=closed, undefined=create, Task=edit
 type TaskDrawerState = Task | null | undefined;
@@ -28,11 +29,16 @@ interface UndoEntry {
   message: string;
 }
 
+function fmtDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
+  const [taskDrawerDefaultDate, setTaskDrawerDefaultDate] = useState<string | undefined>();
 
   // Calendar state
   const [calView, setCalView] = useState<CalendarView>("week");
@@ -104,11 +110,9 @@ export function DashboardPage() {
   const goCalPrev = () => {
     setCalRef((prev) => {
       const d = new Date(prev);
-      if (calView === "month") {
-        d.setMonth(d.getMonth() - 1);
-      } else {
-        d.setDate(d.getDate() - 7);
-      }
+      if (calView === "month") d.setMonth(d.getMonth() - 1);
+      else if (calView === "day") d.setDate(d.getDate() - 1);
+      else d.setDate(d.getDate() - 7);
       return d;
     });
   };
@@ -116,11 +120,9 @@ export function DashboardPage() {
   const goCalNext = () => {
     setCalRef((prev) => {
       const d = new Date(prev);
-      if (calView === "month") {
-        d.setMonth(d.getMonth() + 1);
-      } else {
-        d.setDate(d.getDate() + 7);
-      }
+      if (calView === "month") d.setMonth(d.getMonth() + 1);
+      else if (calView === "day") d.setDate(d.getDate() + 1);
+      else d.setDate(d.getDate() + 7);
       return d;
     });
   };
@@ -129,27 +131,37 @@ export function DashboardPage() {
     setCalRef(new Date());
   };
 
-  const calTitle =
-    calView === "month"
-      ? `${calYear}年${calMonth}月`
-      : (() => {
-          const d = new Date(calRef);
-          const dow = (d.getDay() + 6) % 7;
-          const mon = new Date(d);
-          mon.setDate(mon.getDate() - dow);
-          const sun = new Date(mon);
-          sun.setDate(sun.getDate() + 6);
-          const fmtShort = (dt: Date) =>
-            `${dt.getMonth() + 1}/${dt.getDate()}`;
-          return `${fmtShort(mon)} – ${fmtShort(sun)}`;
-        })();
+  const calTitle = (() => {
+    if (calView === "month") return `${calYear}年${calMonth}月`;
+    if (calView === "day") return fmtDate(calRef);
+    // week
+    const d = new Date(calRef);
+    const dow = (d.getDay() + 6) % 7;
+    const mon = new Date(d);
+    mon.setDate(mon.getDate() - dow);
+    const sun = new Date(mon);
+    sun.setDate(sun.getDate() + 6);
+    const fmtShort = (dt: Date) => `${dt.getMonth() + 1}/${dt.getDate()}`;
+    return `${fmtShort(mon)} – ${fmtShort(sun)}`;
+  })();
+
+  // Day view handlers
+  const handleDaySelectTask = (task: Task) => {
+    setTaskDrawerDefaultDate(undefined);
+    setTaskDrawerState(task);
+  };
+
+  const handleDayCreateTask = (date: string) => {
+    setTaskDrawerDefaultDate(date);
+    setTaskDrawerState(undefined);
+  };
 
   return (
     <div className="dashboard">
       {/* ── FAB: + New Task ── */}
       <button
         className="fab"
-        onClick={() => setTaskDrawerState(undefined)}
+        onClick={() => { setTaskDrawerDefaultDate(undefined); setTaskDrawerState(undefined); }}
         aria-label="タスク作成"
       >
         +
@@ -247,18 +259,15 @@ export function DashboardPage() {
         <div className="cal-toolbar">
           <h2 className="dash-section-title" style={{ margin: 0 }}>カレンダー</h2>
           <div className="cal-view-toggle">
-            <button
-              className={`cal-view-btn ${calView === "week" ? "cal-view-btn--active" : ""}`}
-              onClick={() => setCalView("week")}
-            >
-              週
-            </button>
-            <button
-              className={`cal-view-btn ${calView === "month" ? "cal-view-btn--active" : ""}`}
-              onClick={() => setCalView("month")}
-            >
-              月
-            </button>
+            {(["week", "month", "day"] as CalendarView[]).map((mode) => (
+              <button
+                key={mode}
+                className={`cal-view-btn ${calView === mode ? "cal-view-btn--active" : ""}`}
+                onClick={() => setCalView(mode)}
+              >
+                {mode === "week" ? "週" : mode === "month" ? "月" : "日"}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -269,18 +278,27 @@ export function DashboardPage() {
           <button className="cal-nav-btn" onClick={goCalNext}>&gt;</button>
         </div>
 
-        {calView === "month" ? (
+        {calView === "month" && (
           <CalendarMonth
             year={calYear}
             month={calMonth}
             tasks={tasks}
             onSelectDate={setSelectedDate}
           />
-        ) : (
+        )}
+        {calView === "week" && (
           <CalendarWeekGrid
             refDate={calRef}
             tasks={tasks}
             onSelectDate={setSelectedDate}
+          />
+        )}
+        {calView === "day" && (
+          <CalendarDayTimeline
+            date={fmtDate(calRef)}
+            tasks={tasks}
+            onSelectTask={handleDaySelectTask}
+            onCreateTask={handleDayCreateTask}
           />
         )}
       </section>
@@ -324,6 +342,7 @@ export function DashboardPage() {
 
       <TaskDrawer
         task={taskDrawerState}
+        defaultDueDate={taskDrawerDefaultDate}
         onClose={() => setTaskDrawerState(null)}
         onSaved={load}
       />
