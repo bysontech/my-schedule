@@ -202,6 +202,98 @@ export function computeProjectProgress(
   return result;
 }
 
+/* ── Project progress grouped by group ── */
+
+export interface GroupedProjectProgress {
+  groupId: string | null;
+  groupName: string;
+  projects: ProjectProgress[];
+}
+
+export function computeProjectProgressByGroup(
+  tasks: Task[],
+  groups: { id: string; name: string }[],
+  projects: { id: string; name: string; groupId: string | null }[],
+): GroupedProjectProgress[] {
+  // Build task counts by projectId
+  const projCounts = new Map<string | null, { total: number; done: number }>();
+  for (const task of tasks) {
+    const key = task.projectId;
+    const entry = projCounts.get(key) ?? { total: 0, done: 0 };
+    entry.total++;
+    if (task.status === "done") entry.done++;
+    projCounts.set(key, entry);
+  }
+
+  // Build group → projects mapping
+  const groupProjectMap = new Map<string | null, typeof projects>();
+  for (const p of projects) {
+    const gId = p.groupId;
+    if (!groupProjectMap.has(gId)) groupProjectMap.set(gId, []);
+    groupProjectMap.get(gId)!.push(p);
+  }
+
+  const result: GroupedProjectProgress[] = [];
+
+  const buildProjectEntries = (groupProjects: typeof projects): ProjectProgress[] => {
+    const entries: ProjectProgress[] = [];
+    for (const p of groupProjects) {
+      const counts = projCounts.get(p.id);
+      if (counts) {
+        entries.push({
+          projectId: p.id,
+          projectName: p.name,
+          total: counts.total,
+          done: counts.done,
+          rate: Math.round((counts.done / counts.total) * 100),
+        });
+      }
+    }
+    return entries;
+  };
+
+  // Named groups
+  for (const g of groups) {
+    const gProjects = groupProjectMap.get(g.id) ?? [];
+    const entries = buildProjectEntries(gProjects);
+    // Also count tasks directly in group with no project
+    const directTasks = tasks.filter((t) => t.groupId === g.id && t.projectId === null);
+    if (directTasks.length > 0) {
+      const done = directTasks.filter((t) => t.status === "done").length;
+      entries.push({
+        projectId: null,
+        projectName: "未分類",
+        total: directTasks.length,
+        done,
+        rate: Math.round((done / directTasks.length) * 100),
+      });
+    }
+    if (entries.length > 0) {
+      result.push({ groupId: g.id, groupName: g.name, projects: entries });
+    }
+  }
+
+  // Unassigned group
+  const nullProjects = groupProjectMap.get(null) ?? [];
+  const nullEntries = buildProjectEntries(nullProjects);
+  const nullDirectTasks = tasks.filter((t) => t.groupId === null && t.projectId === null);
+  if (nullDirectTasks.length > 0) {
+    const done = nullDirectTasks.filter((t) => t.status === "done").length;
+    nullEntries.push({
+      projectId: null,
+      projectName: "未分類",
+      total: nullDirectTasks.length,
+      done,
+      rate: Math.round((done / nullDirectTasks.length) * 100),
+    });
+  }
+  if (nullEntries.length > 0) {
+    result.push({ groupId: null, groupName: "未分類", projects: nullEntries });
+  }
+
+  return result;
+}
+
 /* ── Date-range filter helper ── */
 
 function fmtDate(d: Date): string {

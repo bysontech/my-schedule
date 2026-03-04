@@ -2070,6 +2070,143 @@ textarea {
   margin-left: auto;
 }
 
+/* ── Dashboard project grouped progress ── */
+.dash-proj-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dash-proj-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-proj-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text-muted);
+  padding: 0.15rem 0;
+}
+
+/* ── Hierarchy (DayDrawer) ── */
+.hier-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hier-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hier-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #2b6cb0;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid var(--c-border-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .hier-group-label { color: #90cdf4; }
+}
+
+.hier-project {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 0.5rem;
+}
+
+.hier-project-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  padding: 0.1rem 0;
+}
+
+.hier-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+/* ── Workspace project board group sections ── */
+.ws-proj-board {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ws-proj-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ws-proj-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--c-surface-hover);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.ws-proj-group-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ws-proj-group-name { color: #90cdf4; }
+}
+
+/* ── TaskRow priority badge ── */
+.taskrow-priority-badge {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.taskrow-priority-badge--high {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.taskrow-priority-badge--med {
+  background: #feebc8;
+  color: #c05621;
+}
+
+.taskrow-priority-badge--low {
+  background: #bee3f8;
+  color: #2b6cb0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .taskrow-priority-badge--high { background: #5a2020; color: #feb2b2; }
+  .taskrow-priority-badge--med { background: #5a3a10; color: #fbd38d; }
+  .taskrow-priority-badge--low { background: #1a3a5c; color: #90cdf4; }
+}
+
 /* ── Toast ── */
 .toast {
   position: fixed;

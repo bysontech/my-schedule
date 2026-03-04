@@ -1,6 +1,8 @@
 import { forwardRef } from "react";
-import type { Task } from "../domain/task";
+import type { Task, TaskPriority } from "../domain/task";
 import { getDueBucket } from "../utils/dateBuckets";
+
+const PRIORITY_BADGE: Record<TaskPriority, string> = { high: "H", med: "M", low: "L" };
 
 interface TaskRowProps {
   task: Task;
@@ -36,6 +38,9 @@ export const TaskRow = forwardRef<HTMLDivElement, TaskRowProps>(
             onToggleDone(task.id);
           }}
         />
+        <span className={`taskrow-priority-badge taskrow-priority-badge--${task.priority}`}>
+          {PRIORITY_BADGE[task.priority]}
+        </span>
         <span
           className={`taskrow-title ${isDone ? "taskrow-title--done" : ""}`}
           onClick={() => onClickTitle?.(task)}
