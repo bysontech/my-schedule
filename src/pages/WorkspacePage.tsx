@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import type { Group, Project, Bucket } from "../domain/master";
 import { listTasks, upsertTask, softDeleteTask } from "../db/tasksRepo";
@@ -8,10 +9,21 @@ import { listBuckets } from "../db/bucketsRepo";
 import { KebabMenu } from "../components/KebabMenu";
 import { TaskDrawer } from "../components/TaskDrawer";
 import { MasterDrawer } from "../components/MasterDrawer";
+import { FabMenu } from "../components/FabMenu";
 import { Toast } from "../components/Toast";
 
 type ViewMode = "group_board" | "single_group" | "project_board";
 type RangeFilter = "all" | "this_week" | "this_month" | "undone_only";
+
+const VIEW_MODES: ViewMode[] = ["group_board", "single_group", "project_board"];
+const RANGE_VALUES: RangeFilter[] = ["all", "this_week", "this_month", "undone_only"];
+
+function isViewMode(v: string | null): v is ViewMode {
+  return VIEW_MODES.includes(v as ViewMode);
+}
+function isRangeFilter(v: string | null): v is RangeFilter {
+  return RANGE_VALUES.includes(v as RangeFilter);
+}
 
 function fmt(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -35,13 +47,24 @@ function getMonthRange(): [string, string] {
 }
 
 export function WorkspacePage() {
+  const [searchParams] = useSearchParams();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
 
+  // Read initial state from query params
+  const qMode = searchParams.get("mode");
+  const qRange = searchParams.get("range");
+  const qGroupId = searchParams.get("groupId");
+  const qProjectId = searchParams.get("projectId");
+
+  const initialMode = isViewMode(qMode) ? qMode : "group_board";
+  const initialRange = isRangeFilter(qRange) ? qRange : "all";
+
   // View mode
-  const [viewMode, setViewMode] = useState<ViewMode>("group_board");
+  const [viewMode, setViewMode] = useState<ViewMode>(initialMode);
   // Single-group/project selector — undefined means "not selected yet"
   const [singleId, setSingleId] = useState<string | undefined>(undefined);
 
@@ -50,12 +73,16 @@ export function WorkspacePage() {
   const [filterBucketId, setFilterBucketId] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "all">("all");
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
-  const [rangeFilter, setRangeFilter] = useState<RangeFilter>("all");
+  const [rangeFilter, setRangeFilter] = useState<RangeFilter>(initialRange);
 
   // Drawers
   const [taskDrawer, setTaskDrawer] = useState<Task | null | undefined>(null);
   const [taskDrawerGroupId, setTaskDrawerGroupId] = useState<string | undefined>();
-  const [masterDrawer, setMasterDrawer] = useState<{ type: "group"; item?: Group } | null>(null);
+  const [taskDrawerProjectId, setTaskDrawerProjectId] = useState<string | undefined>();
+  const [masterDrawer, setMasterDrawer] = useState<{
+    type: "group" | "project";
+    item?: Group | Project;
+  } | null>(null);
 
   // Toast
   const [toast, setToast] = useState<string | null>(null);
@@ -64,6 +91,9 @@ export function WorkspacePage() {
   const dragTaskId = useRef<string | null>(null);
   const dragSourceColId = useRef<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | undefined>(undefined);
+
+  // Track if query params have been applied
+  const qApplied = useRef(false);
 
   const reload = useCallback(async () => {
     const [t, g, p, b] = await Promise.all([
@@ -76,6 +106,25 @@ export function WorkspacePage() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // Apply query param groupId/projectId after data loads
+  useEffect(() => {
+    if (qApplied.current) return;
+    if (groups.length === 0 && projects.length === 0) return;
+    qApplied.current = true;
+
+    if (initialMode === "group_board" && qGroupId) {
+      // Switch to single_group mode with selected group
+      setViewMode("single_group");
+      const colKey = qGroupId === "__null__" ? "__null__" : qGroupId;
+      setSingleId(colKey);
+    } else if (initialMode === "single_group" && qGroupId) {
+      const colKey = qGroupId === "__null__" ? "__null__" : qGroupId;
+      setSingleId(colKey);
+    } else if (initialMode === "project_board" && qProjectId) {
+      // project_board doesn't have singleId selection but we keep viewMode
+    }
+  }, [groups, projects, initialMode, qGroupId, qProjectId]);
 
   // ---- Filtered tasks ----
   const filteredTasks = useMemo(() => {
@@ -115,7 +164,6 @@ export function WorkspacePage() {
   }, [filterBucketId, filterPriority, filterStatus, rangeFilter]);
 
   // ---- Column computation based on viewMode ----
-  // colKey: string for real IDs, "__null__" for uncategorized
   const COL_NULL = "__null__";
   const toColKey = (id: string | null) => id ?? COL_NULL;
   const fromColKey = (key: string): string | null => (key === COL_NULL ? null : key);
@@ -226,12 +274,19 @@ export function WorkspacePage() {
   // ---- Task actions ----
   const handleCreateTask = (colKey: string) => {
     const id = fromColKey(colKey);
-    setTaskDrawerGroupId(id ?? undefined);
+    if (viewMode === "project_board") {
+      setTaskDrawerGroupId(undefined);
+      setTaskDrawerProjectId(id ?? undefined);
+    } else {
+      setTaskDrawerGroupId(id ?? undefined);
+      setTaskDrawerProjectId(undefined);
+    }
     setTaskDrawer(undefined);
   };
 
   const handleEditTask = (task: Task) => {
     setTaskDrawerGroupId(undefined);
+    setTaskDrawerProjectId(undefined);
     setTaskDrawer(task);
   };
 
@@ -439,10 +494,22 @@ export function WorkspacePage() {
         })}
       </div>
 
+      {/* FAB Menu */}
+      <FabMenu
+        onCreateTask={() => {
+          setTaskDrawerGroupId(undefined);
+          setTaskDrawerProjectId(undefined);
+          setTaskDrawer(undefined);
+        }}
+        onCreateGroup={() => setMasterDrawer({ type: "group" })}
+        onCreateProject={() => setMasterDrawer({ type: "project" })}
+      />
+
       {/* Drawers */}
       <TaskDrawer
         task={taskDrawer}
         defaultGroupId={taskDrawerGroupId}
+        defaultProjectId={taskDrawerProjectId}
         onClose={() => setTaskDrawer(null)}
         onSaved={reload}
       />

@@ -149,6 +149,88 @@ export function computeGroupProgress(
   return result;
 }
 
+/* ── Project progress ── */
+
+export interface ProjectProgress {
+  projectId: string | null;
+  projectName: string;
+  total: number;
+  done: number;
+  rate: number; // 0-100
+}
+
+export function computeProjectProgress(
+  tasks: Task[],
+  projects: { id: string; name: string }[],
+): ProjectProgress[] {
+  const acc = new Map<string | null, { total: number; done: number }>();
+
+  for (const task of tasks) {
+    const key = task.projectId;
+    const entry = acc.get(key) ?? { total: 0, done: 0 };
+    entry.total++;
+    if (task.status === "done") entry.done++;
+    acc.set(key, entry);
+  }
+
+  const result: ProjectProgress[] = [];
+
+  for (const p of projects) {
+    const entry = acc.get(p.id);
+    if (entry) {
+      result.push({
+        projectId: p.id,
+        projectName: p.name,
+        total: entry.total,
+        done: entry.done,
+        rate: Math.round((entry.done / entry.total) * 100),
+      });
+    }
+  }
+
+  const unassigned = acc.get(null);
+  if (unassigned) {
+    result.push({
+      projectId: null,
+      projectName: "未分類",
+      total: unassigned.total,
+      done: unassigned.done,
+      rate: Math.round((unassigned.done / unassigned.total) * 100),
+    });
+  }
+
+  return result;
+}
+
+/* ── Date-range filter helper ── */
+
+function fmtDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export function filterByDateRange(tasks: Task[], range: "this_week" | "this_month"): Task[] {
+  const now = new Date();
+  let start: string;
+  let end: string;
+
+  if (range === "this_week") {
+    const day = now.getDay();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((day + 6) % 7));
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    start = fmtDate(mon);
+    end = fmtDate(sun);
+  } else {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    start = fmtDate(first);
+    end = fmtDate(last);
+  }
+
+  return tasks.filter((t) => t.dueDate != null && t.dueDate >= start && t.dueDate <= end);
+}
+
 /* ── Existing helpers ── */
 
 export function filterByDueBucket(tasks: Task[], bucket: DueBucket): Task[] {
