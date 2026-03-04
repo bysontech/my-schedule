@@ -151,13 +151,13 @@ export function PlanningPage() {
       <div className="cal-toolbar">
         <h2 className="dash-section-title" style={{ margin: 0 }}>Planning</h2>
         <div className="cal-view-toggle">
-          {(["week", "month", "year", "day"] as ViewMode[]).map((mode) => (
+          {(["day", "week", "month", "year"] as ViewMode[]).map((mode) => (
             <button
               key={mode}
               className={`cal-view-btn ${viewMode === mode ? "cal-view-btn--active" : ""}`}
               onClick={() => setViewMode(mode)}
             >
-              {mode === "week" ? "週" : mode === "month" ? "月" : mode === "year" ? "年" : "日"}
+              {mode === "day" ? "日" : mode === "week" ? "週" : mode === "month" ? "月" : "年"}
             </button>
           ))}
         </div>

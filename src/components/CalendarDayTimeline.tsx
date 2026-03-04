@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import type { Task } from "../domain/task";
 import { getDayTasks, splitDayTasks, computeBlock } from "../utils/dayView";
 
-const HOUR_START = 6;
+const HOUR_START = 0;
 const HOUR_END = 24;
 const HOUR_HEIGHT = 48; // px per hour
-const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
+const HOURS = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i);
 
 interface CalendarDayTimelineProps {
   date: string; // YYYY-MM-DD

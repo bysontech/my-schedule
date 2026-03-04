@@ -212,6 +212,71 @@ export function WorkspacePage() {
     return groups.find((g) => g.id === key)?.name ?? "不明";
   };
 
+  // ---- project_board hierarchical structure ----
+  interface ProjBoardGroup {
+    groupId: string | null;
+    groupName: string;
+    projectCols: { colKey: string; projectName: string; tasks: Task[] }[];
+  }
+
+  const projectBoardGroups = useMemo((): ProjBoardGroup[] => {
+    if (viewMode !== "project_board") return [];
+
+    // Group projects by their groupId
+    const groupProjectMap = new Map<string | null, Project[]>();
+    for (const p of projects) {
+      const gId = p.groupId;
+      if (!groupProjectMap.has(gId)) groupProjectMap.set(gId, []);
+      groupProjectMap.get(gId)!.push(p);
+    }
+
+    // Build task map by projectId
+    const tasksByProject = new Map<string | null, Task[]>();
+    for (const t of filteredTasks) {
+      const key = t.projectId;
+      if (!tasksByProject.has(key)) tasksByProject.set(key, []);
+      tasksByProject.get(key)!.push(t);
+    }
+
+    const result: ProjBoardGroup[] = [];
+
+    // Named groups
+    for (const g of groups) {
+      const groupProjects = groupProjectMap.get(g.id) ?? [];
+      const cols = groupProjects.map((p) => ({
+        colKey: p.id,
+        projectName: p.name,
+        tasks: tasksByProject.get(p.id) ?? [],
+      }));
+      // Also include uncategorized tasks within this group
+      // (tasks with groupId matching but projectId=null)
+      const uncatTasks = filteredTasks.filter((t) => t.groupId === g.id && t.projectId === null);
+      if (uncatTasks.length > 0 || cols.length === 0) {
+        cols.unshift({ colKey: `${g.id}__uncat`, projectName: "未分類", tasks: uncatTasks });
+      }
+      if (cols.some((c) => c.tasks.length > 0) || groupProjects.length > 0) {
+        result.push({ groupId: g.id, groupName: g.name, projectCols: cols });
+      }
+    }
+
+    // Unassigned group (groupId=null)
+    const nullGroupProjects = groupProjectMap.get(null) ?? [];
+    const nullCols = nullGroupProjects.map((p) => ({
+      colKey: p.id,
+      projectName: p.name,
+      tasks: tasksByProject.get(p.id) ?? [],
+    }));
+    const nullUncatTasks = filteredTasks.filter((t) => t.groupId === null && t.projectId === null);
+    if (nullUncatTasks.length > 0 || nullCols.length === 0) {
+      nullCols.unshift({ colKey: COL_NULL, projectName: "未分類", tasks: nullUncatTasks });
+    }
+    if (nullCols.some((c) => c.tasks.length > 0) || nullGroupProjects.length > 0 || nullUncatTasks.length > 0) {
+      result.push({ groupId: null, groupName: "未分類", projectCols: nullCols });
+    }
+
+    return result;
+  }, [viewMode, groups, projects, filteredTasks]);
+
   // ---- D&D handlers ----
   const handleDragStart = (taskId: string, sourceColKey: string) => {
     dragTaskId.current = taskId;
@@ -319,6 +384,48 @@ export function WorkspacePage() {
     ];
   }, [viewMode, groups, projects]);
 
+  // ---- Render task card (shared between modes) ----
+  const renderTaskCard = (task: Task, dragColKey: string) => {
+    const isDone = task.status === "done";
+    const isOverdue = task.dueDate != null && task.dueDate < todayStr && !isDone;
+    const isToday = task.dueDate === todayStr;
+
+    return (
+      <div
+        key={task.id}
+        className={`ws-card ${isDone ? "ws-card--done" : ""}`}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          handleDragStart(task.id, dragColKey);
+        }}
+        onDragEnd={handleDragEnd}
+      >
+        <span className={`ws-card-pbar ws-card-pbar--${task.priority}`} />
+        <div className="ws-card-content">
+          <div className="ws-card-row">
+            <span
+              className={`ws-card-title ${isDone ? "ws-card-title--done" : ""}`}
+              role="button"
+              onClick={() => handleEditTask(task)}
+            >
+              {task.title}
+            </span>
+            <KebabMenu items={[
+              { label: "編集", onClick: () => handleEditTask(task) },
+              { label: "削除", danger: true, onClick: () => handleDeleteTask(task) },
+            ]} />
+          </div>
+          {task.dueDate && (
+            <span className={`ws-card-due ${isOverdue || isToday ? "ws-card-due--danger" : ""}`}>
+              {task.dueDate}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="ws-page">
       {/* Toolbar */}
@@ -404,95 +511,91 @@ export function WorkspacePage() {
         <div className="ws-empty-prompt">上のセレクタからグループを選択してください</div>
       )}
 
-      {/* Columns */}
-      <div className="ws-board">
-        {Array.from(columns.entries()).map(([colKey, columnTasks]) => {
-          const isDragOver = dragOverColId === colKey;
-          const group = viewMode !== "project_board" && colKey !== COL_NULL
-            ? groups.find((g) => g.id === colKey)
-            : null;
+      {/* Columns: group_board / single_group */}
+      {viewMode !== "project_board" && (
+        <div className="ws-board">
+          {Array.from(columns.entries()).map(([colKey, columnTasks]) => {
+            const isDragOver = dragOverColId === colKey;
+            const group = colKey !== COL_NULL
+              ? groups.find((g) => g.id === colKey)
+              : null;
 
-          return (
-            <div
-              key={colKey}
-              className={`ws-col ${isDragOver ? "ws-col--drag-over" : ""}`}
-              onDragOver={(e) => handleDragOver(e, colKey)}
-              onDragLeave={(e) => handleDragLeave(e, colKey)}
-              onDrop={(e) => handleDrop(e, colKey)}
-            >
-              {/* Column header */}
-              <div className="ws-col-header">
-                <span className="ws-col-name">{colName(colKey)}</span>
-                <span className="ws-col-count">{columnTasks.length}</span>
-                <div className="ws-col-actions">
-                  <button
-                    className="ws-col-add"
-                    onClick={() => handleCreateTask(colKey)}
-                    title="タスク作成"
-                  >
-                    +
-                  </button>
-                  {group && (
+            return (
+              <div
+                key={colKey}
+                className={`ws-col ${isDragOver ? "ws-col--drag-over" : ""}`}
+                onDragOver={(e) => handleDragOver(e, colKey)}
+                onDragLeave={(e) => handleDragLeave(e, colKey)}
+                onDrop={(e) => handleDrop(e, colKey)}
+              >
+                <div className="ws-col-header">
+                  <span className="ws-col-name">{colName(colKey)}</span>
+                  <span className="ws-col-count">{columnTasks.length}</span>
+                  <div className="ws-col-actions">
+                    <button className="ws-col-add" onClick={() => handleCreateTask(colKey)} title="タスク作成">+</button>
+                    {group && (
+                      <KebabMenu items={[
+                        { label: "グループ編集", onClick: () => handleEditGroup(group) },
+                      ]} />
+                    )}
+                  </div>
+                </div>
+                <div className="ws-col-body">
+                  {columnTasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
+                  {columnTasks.map((task) => renderTaskCard(task, toColKey(task.groupId)))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Columns: project_board (hierarchical: group → project) */}
+      {viewMode === "project_board" && (
+        <div className="ws-proj-board">
+          {projectBoardGroups.map((gbg) => {
+            const groupObj = gbg.groupId ? groups.find((g) => g.id === gbg.groupId) : null;
+            return (
+              <div key={gbg.groupId ?? COL_NULL} className="ws-proj-group">
+                <div className="ws-proj-group-header">
+                  <span className="ws-proj-group-name">{gbg.groupName}</span>
+                  {groupObj && (
                     <KebabMenu items={[
-                      { label: "グループ編集", onClick: () => handleEditGroup(group) },
+                      { label: "グループ編集", onClick: () => handleEditGroup(groupObj) },
                     ]} />
                   )}
                 </div>
-              </div>
-
-              {/* Task cards */}
-              <div className="ws-col-body">
-                {columnTasks.length === 0 && (
-                  <div className="ws-col-empty">タスクなし</div>
-                )}
-                {columnTasks.map((task) => {
-                  const isDone = task.status === "done";
-                  const isOverdue = task.dueDate != null && task.dueDate < todayStr && !isDone;
-                  const isToday = task.dueDate === todayStr;
-                  const dragColKey = viewMode === "project_board"
-                    ? toColKey(task.projectId)
-                    : toColKey(task.groupId);
-
-                  return (
-                    <div
-                      key={task.id}
-                      className={`ws-card ${isDone ? "ws-card--done" : ""}`}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = "move";
-                        handleDragStart(task.id, dragColKey);
-                      }}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <span className={`ws-card-pbar ws-card-pbar--${task.priority}`} />
-                      <div className="ws-card-content">
-                        <div className="ws-card-row">
-                          <span
-                            className={`ws-card-title ${isDone ? "ws-card-title--done" : ""}`}
-                            role="button"
-                            onClick={() => handleEditTask(task)}
-                          >
-                            {task.title}
-                          </span>
-                          <KebabMenu items={[
-                            { label: "編集", onClick: () => handleEditTask(task) },
-                            { label: "削除", danger: true, onClick: () => handleDeleteTask(task) },
-                          ]} />
+                <div className="ws-board">
+                  {gbg.projectCols.map((pc) => {
+                    const isDragOver = dragOverColId === pc.colKey;
+                    return (
+                      <div
+                        key={pc.colKey}
+                        className={`ws-col ${isDragOver ? "ws-col--drag-over" : ""}`}
+                        onDragOver={(e) => handleDragOver(e, pc.colKey)}
+                        onDragLeave={(e) => handleDragLeave(e, pc.colKey)}
+                        onDrop={(e) => handleDrop(e, pc.colKey)}
+                      >
+                        <div className="ws-col-header">
+                          <span className="ws-col-name">{pc.projectName}</span>
+                          <span className="ws-col-count">{pc.tasks.length}</span>
+                          <div className="ws-col-actions">
+                            <button className="ws-col-add" onClick={() => handleCreateTask(pc.colKey)} title="タスク作成">+</button>
+                          </div>
                         </div>
-                        {task.dueDate && (
-                          <span className={`ws-card-due ${isOverdue || isToday ? "ws-card-due--danger" : ""}`}>
-                            {task.dueDate}
-                          </span>
-                        )}
+                        <div className="ws-col-body">
+                          {pc.tasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
+                          {pc.tasks.map((task) => renderTaskCard(task, toColKey(task.projectId)))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* FAB Menu */}
       <FabMenu

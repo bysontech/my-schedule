@@ -10,7 +10,7 @@ import {
   computeStrategySummary,
   computeDangerCounts,
   computeGroupProgress,
-  computeProjectProgress,
+  computeProjectProgressByGroup,
   filterByDateRange,
 } from "../utils/taskAggregations";
 import { getDueBucket } from "../utils/dateBuckets";
@@ -85,9 +85,9 @@ export function DashboardPage() {
     () => computeGroupProgress(periodTasks, groups),
     [periodTasks, groups],
   );
-  const projectProgress = useMemo(
-    () => computeProjectProgress(periodTasks, projects),
-    [periodTasks, projects],
+  const groupedProjectProgress = useMemo(
+    () => computeProjectProgressByGroup(periodTasks, groups, projects),
+    [periodTasks, groups, projects],
   );
 
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
@@ -188,13 +188,10 @@ export function DashboardPage() {
     navigate(`/workspace?mode=group_board&range=${range}&groupId=${gid}`);
   };
 
-  const handleProjectProgressClick = (projectId: string | null) => {
-    const pid = projectId ?? "__null__";
+  const handleProjectProgressClick = () => {
     const range = progressPeriod;
-    navigate(`/workspace?mode=project_board&range=${range}&projectId=${pid}`);
+    navigate(`/workspace?mode=project_board&range=${range}`);
   };
-
-  const currentProgress = progressView === "group" ? groupProgress : projectProgress;
 
   return (
     <div className="dashboard">
@@ -299,13 +296,13 @@ export function DashboardPage() {
         <div className="cal-toolbar">
           <h2 className="dash-section-title" style={{ margin: 0 }}>カレンダー</h2>
           <div className="cal-view-toggle">
-            {(["week", "month", "day"] as CalendarView[]).map((mode) => (
+            {(["day", "week", "month"] as CalendarView[]).map((mode) => (
               <button
                 key={mode}
                 className={`cal-view-btn ${calView === mode ? "cal-view-btn--active" : ""}`}
                 onClick={() => setCalView(mode)}
               >
-                {mode === "week" ? "週" : mode === "month" ? "月" : "日"}
+                {mode === "day" ? "日" : mode === "week" ? "週" : "月"}
               </button>
             ))}
           </div>
@@ -379,36 +376,55 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {currentProgress.length > 0 ? (
-          <div className="dash-group-list">
-            {currentProgress.map((item) => {
-              const id = "groupId" in item ? item.groupId : item.projectId;
-              const name = "groupName" in item ? item.groupName : item.projectName;
-              const handleClick = progressView === "group"
-                ? () => handleGroupProgressClick(id)
-                : () => handleProjectProgressClick(id);
-
-              return (
+        {progressView === "group" ? (
+          groupProgress.length > 0 ? (
+            <div className="dash-group-list">
+              {groupProgress.map((gp) => (
                 <button
-                  key={id ?? "__null__"}
+                  key={gp.groupId ?? "__null__"}
                   className="dash-group-row"
-                  onClick={handleClick}
+                  onClick={() => handleGroupProgressClick(gp.groupId)}
                 >
-                  <span className="dash-group-name">{name}</span>
+                  <span className="dash-group-name">{gp.groupName}</span>
                   <span className="dash-group-bar-track">
-                    <span
-                      className="dash-group-bar-fill"
-                      style={{ width: `${item.rate}%` }}
-                    />
+                    <span className="dash-group-bar-fill" style={{ width: `${gp.rate}%` }} />
                   </span>
-                  <span className="dash-group-rate">{item.rate}%</span>
-                  <span className="dash-group-fraction">{item.done}/{item.total}</span>
+                  <span className="dash-group-rate">{gp.rate}%</span>
+                  <span className="dash-group-fraction">{gp.done}/{gp.total}</span>
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="ws-col-empty">対象タスクなし</div>
+          )
         ) : (
-          <div className="ws-col-empty">対象タスクなし</div>
+          groupedProjectProgress.length > 0 ? (
+            <div className="dash-proj-grouped">
+              {groupedProjectProgress.map((gpg) => (
+                <div key={gpg.groupId ?? "__null__"} className="dash-proj-group">
+                  <div className="dash-proj-group-label">{gpg.groupName}</div>
+                  <div className="dash-group-list">
+                    {gpg.projects.map((pp) => (
+                      <button
+                        key={pp.projectId ?? "__null__"}
+                        className="dash-group-row"
+                        onClick={() => handleProjectProgressClick()}
+                      >
+                        <span className="dash-group-name">{pp.projectName}</span>
+                        <span className="dash-group-bar-track">
+                          <span className="dash-group-bar-fill" style={{ width: `${pp.rate}%` }} />
+                        </span>
+                        <span className="dash-group-rate">{pp.rate}%</span>
+                        <span className="dash-group-fraction">{pp.done}/{pp.total}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="ws-col-empty">対象タスクなし</div>
+          )
         )}
       </section>
 

@@ -1,5 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Task } from "../domain/task";
+import type { Group, Project } from "../domain/master";
+import { listGroups } from "../db/groupsRepo";
+import { listProjects } from "../db/projectsRepo";
+import { groupByGroupProject } from "../utils/taskHierarchy";
 import { Drawer } from "./Drawer";
 import { TaskRow } from "./TaskRow";
 import { KebabMenu, type KebabItem } from "./KebabMenu";
@@ -18,14 +22,38 @@ interface DayTasksDrawerProps {
 
 export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: DayTasksDrawerProps) {
   const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    if (!date) return;
+    listGroups().then(setGroups);
+    listProjects().then(setProjects);
+  }, [date]);
 
   const dayTasks = useMemo(() => {
     if (!date) return [];
     return tasks.filter((t) => t.dueDate === date);
   }, [tasks, date]);
 
-  const activeTasks = dayTasks.filter((t) => t.status !== "done");
-  const doneTasks = dayTasks.filter((t) => t.status === "done");
+  const hierarchy = useMemo(
+    () => groupByGroupProject(dayTasks, groups, projects),
+    [dayTasks, groups, projects],
+  );
+
+  const renderTaskRow = (t: Task) => {
+    const items: KebabItem[] = [
+      { label: "編集", onClick: () => setTaskDrawerState(t) },
+    ];
+    return (
+      <TaskRow
+        key={t.id}
+        task={t}
+        onToggleDone={onToggleDone}
+        extra={<KebabMenu items={items} />}
+      />
+    );
+  };
 
   return (
     <>
@@ -42,43 +70,21 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
           {dayTasks.length === 0 ? (
             <p className="day-drawer-empty">この日の期限タスクはありません</p>
           ) : (
-            <>
-              {activeTasks.length > 0 && (
-                <div className="day-drawer-section">
-                  {activeTasks.map((t) => {
-                    const items: KebabItem[] = [
-                      { label: "編集", onClick: () => setTaskDrawerState(t) },
-                    ];
-                    return (
-                      <TaskRow
-                        key={t.id}
-                        task={t}
-                        onToggleDone={onToggleDone}
-                        extra={<KebabMenu items={items} />}
-                      />
-                    );
-                  })}
+            <div className="hier-sections">
+              {hierarchy.map((gs) => (
+                <div key={gs.groupId ?? "__null__"} className="hier-group">
+                  <div className="hier-group-label">{gs.groupName}</div>
+                  {gs.projects.map((ps) => (
+                    <div key={ps.projectId ?? "__null__"} className="hier-project">
+                      <div className="hier-project-label">{ps.projectName}</div>
+                      <div className="hier-task-list">
+                        {ps.tasks.map(renderTaskRow)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {doneTasks.length > 0 && (
-                <div className="day-drawer-section">
-                  <span className="day-drawer-section-label">完了</span>
-                  {doneTasks.map((t) => {
-                    const items: KebabItem[] = [
-                      { label: "編集", onClick: () => setTaskDrawerState(t) },
-                    ];
-                    return (
-                      <TaskRow
-                        key={t.id}
-                        task={t}
-                        onToggleDone={onToggleDone}
-                        extra={<KebabMenu items={items} />}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
       </Drawer>
