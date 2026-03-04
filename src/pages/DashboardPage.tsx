@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "../domain/task";
-import type { Group } from "../domain/master";
+import type { Group, Project } from "../domain/master";
 import { listTasks, toggleDone } from "../db/tasksRepo";
 import { listGroups } from "../db/groupsRepo";
+import { listProjects } from "../db/projectsRepo";
 import { ensureNextInstanceForAllActiveTemplates } from "../utils/recurrenceEngine";
 import {
   computeStrategySummary,
   computeDangerCounts,
   computeGroupProgress,
+  computeProjectProgress,
+  filterByDateRange,
 } from "../utils/taskAggregations";
 import { getDueBucket } from "../utils/dateBuckets";
 import { TaskRow } from "../components/TaskRow";
@@ -20,6 +23,8 @@ import { DayTasksDrawer } from "../components/DayTasksDrawer";
 import { Toast } from "../components/Toast";
 
 type CalendarView = "week" | "month" | "day";
+type ProgressView = "group" | "project";
+type ProgressPeriod = "this_week" | "this_month";
 
 // TaskDrawer state: null=closed, undefined=create, Task=edit
 type TaskDrawerState = Task | null | undefined;
@@ -37,6 +42,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
   const [taskDrawerDefaultDate, setTaskDrawerDefaultDate] = useState<string | undefined>();
 
@@ -44,6 +50,10 @@ export function DashboardPage() {
   const [calView, setCalView] = useState<CalendarView>("week");
   const [calRef, setCalRef] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Progress section state
+  const [progressView, setProgressView] = useState<ProgressView>("group");
+  const [progressPeriod, setProgressPeriod] = useState<ProgressPeriod>("this_week");
 
   // Undo
   const [undoEntry, setUndoEntry] = useState<UndoEntry | null>(null);
@@ -55,6 +65,7 @@ export function DashboardPage() {
   const load = useCallback(() => {
     listTasks().then(setTasks);
     listGroups().then(setGroups);
+    listProjects().then(setProjects);
   }, []);
 
   useEffect(() => {
@@ -63,7 +74,21 @@ export function DashboardPage() {
 
   const strategy = useMemo(() => computeStrategySummary(tasks), [tasks]);
   const danger = useMemo(() => computeDangerCounts(tasks), [tasks]);
-  const groupProgress = useMemo(() => computeGroupProgress(tasks, groups), [tasks, groups]);
+
+  // Period-filtered tasks for progress section
+  const periodTasks = useMemo(
+    () => filterByDateRange(tasks, progressPeriod),
+    [tasks, progressPeriod],
+  );
+
+  const groupProgress = useMemo(
+    () => computeGroupProgress(periodTasks, groups),
+    [periodTasks, groups],
+  );
+  const projectProgress = useMemo(
+    () => computeProjectProgress(periodTasks, projects),
+    [periodTasks, projects],
+  );
 
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
 
@@ -155,6 +180,21 @@ export function DashboardPage() {
     setTaskDrawerDefaultDate(date);
     setTaskDrawerState(undefined);
   };
+
+  // Progress row click -> navigate to Workspace with query params
+  const handleGroupProgressClick = (groupId: string | null) => {
+    const gid = groupId ?? "__null__";
+    const range = progressPeriod;
+    navigate(`/workspace?mode=group_board&range=${range}&groupId=${gid}`);
+  };
+
+  const handleProjectProgressClick = (projectId: string | null) => {
+    const pid = projectId ?? "__null__";
+    const range = progressPeriod;
+    navigate(`/workspace?mode=project_board&range=${range}&projectId=${pid}`);
+  };
+
+  const currentProgress = progressView === "group" ? groupProgress : projectProgress;
 
   return (
     <div className="dashboard">
@@ -304,32 +344,73 @@ export function DashboardPage() {
       </section>
 
       {/* ── 分野別進捗 ── */}
-      {groupProgress.length > 0 && (
-        <section className="dash-section">
-          <h2 className="dash-section-title">分野別進捗</h2>
-          <div className="dash-group-list">
-            {groupProgress.map((gp) => (
+      <section className="dash-section">
+        <div className="dash-progress-header">
+          <h2 className="dash-section-title" style={{ margin: 0 }}>分野別進捗</h2>
+          <div className="dash-progress-toggles">
+            <div className="cal-view-toggle">
               <button
-                key={gp.groupId ?? "__null__"}
-                className="dash-group-row"
-                onClick={() =>
-                  navigate("/workspace")
-                }
+                className={`cal-view-btn ${progressView === "group" ? "cal-view-btn--active" : ""}`}
+                onClick={() => setProgressView("group")}
               >
-                <span className="dash-group-name">{gp.groupName}</span>
-                <span className="dash-group-bar-track">
-                  <span
-                    className="dash-group-bar-fill"
-                    style={{ width: `${gp.rate}%` }}
-                  />
-                </span>
-                <span className="dash-group-rate">{gp.rate}%</span>
-                <span className="dash-group-fraction">{gp.done}/{gp.total}</span>
+                グループ
               </button>
-            ))}
+              <button
+                className={`cal-view-btn ${progressView === "project" ? "cal-view-btn--active" : ""}`}
+                onClick={() => setProgressView("project")}
+              >
+                プロジェクト
+              </button>
+            </div>
+            <div className="cal-view-toggle">
+              <button
+                className={`cal-view-btn ${progressPeriod === "this_week" ? "cal-view-btn--active" : ""}`}
+                onClick={() => setProgressPeriod("this_week")}
+              >
+                今週
+              </button>
+              <button
+                className={`cal-view-btn ${progressPeriod === "this_month" ? "cal-view-btn--active" : ""}`}
+                onClick={() => setProgressPeriod("this_month")}
+              >
+                今月
+              </button>
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+
+        {currentProgress.length > 0 ? (
+          <div className="dash-group-list">
+            {currentProgress.map((item) => {
+              const id = "groupId" in item ? item.groupId : item.projectId;
+              const name = "groupName" in item ? item.groupName : item.projectName;
+              const handleClick = progressView === "group"
+                ? () => handleGroupProgressClick(id)
+                : () => handleProjectProgressClick(id);
+
+              return (
+                <button
+                  key={id ?? "__null__"}
+                  className="dash-group-row"
+                  onClick={handleClick}
+                >
+                  <span className="dash-group-name">{name}</span>
+                  <span className="dash-group-bar-track">
+                    <span
+                      className="dash-group-bar-fill"
+                      style={{ width: `${item.rate}%` }}
+                    />
+                  </span>
+                  <span className="dash-group-rate">{item.rate}%</span>
+                  <span className="dash-group-fraction">{item.done}/{item.total}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="ws-col-empty">対象タスクなし</div>
+        )}
+      </section>
 
       {/* Drawers */}
       <DayTasksDrawer
