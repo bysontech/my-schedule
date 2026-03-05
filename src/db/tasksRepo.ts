@@ -5,6 +5,23 @@ export async function listTasks(): Promise<Task[]> {
   return db.tasks.filter((task) => !task.isDeleted).toArray();
 }
 
+/**
+ * 日付範囲でタスクを取得（dueDate が startDate〜endDate のもの、未削除のみ）。
+ * カレンダー・日別ドロワーなど、範囲が決まっている画面で利用し、全件取得を避ける。
+ * @param startDate YYYY-MM-DD（以上）
+ * @param endDate YYYY-MM-DD（以下）
+ */
+export async function listTasksByDateRange(
+  startDate: string,
+  endDate: string,
+): Promise<Task[]> {
+  return db.tasks
+    .where("dueDate")
+    .between(startDate, endDate, true, true)
+    .filter((task) => !task.isDeleted)
+    .toArray();
+}
+
 export async function getTask(id: string): Promise<Task | undefined> {
   return db.tasks.get(id);
 }

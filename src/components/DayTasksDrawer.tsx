@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import type { Task } from "../domain/task";
 import type { Group, Project } from "../domain/master";
+import { listTasksByDateRange } from "../db/tasksRepo";
 import { listGroups } from "../db/groupsRepo";
 import { listProjects } from "../db/projectsRepo";
 import { groupByGroupProject } from "../utils/taskHierarchy";
@@ -14,32 +15,45 @@ type TaskDrawerState = Task | null | undefined;
 
 interface DayTasksDrawerProps {
   date: string | null;   // YYYY-MM-DD or null (closed)
-  tasks: Task[];
-  onToggleDone: (id: string) => void;
+  onToggleDone: (id: string) => void | Promise<void>;
   onSaved: () => void;
   onClose: () => void;
 }
 
-export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: DayTasksDrawerProps) {
+export function DayTasksDrawer({ date, onToggleDone, onSaved, onClose }: DayTasksDrawerProps) {
   const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
+  const [dayTasks, setDayTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+
+  const refetch = useCallback(() => {
+    if (!date) return;
+    listTasksByDateRange(date, date).then(setDayTasks);
+  }, [date]);
 
   useEffect(() => {
     if (!date) return;
     listGroups().then(setGroups);
     listProjects().then(setProjects);
-  }, [date]);
-
-  const dayTasks = useMemo(() => {
-    if (!date) return [];
-    return tasks.filter((t) => t.dueDate === date);
-  }, [tasks, date]);
+    refetch();
+  }, [date, refetch]);
 
   const hierarchy = useMemo(
     () => groupByGroupProject(dayTasks, groups, projects),
     [dayTasks, groups, projects],
   );
+
+  const handleToggleDone = useCallback(
+    (id: string) => {
+      Promise.resolve(onToggleDone(id)).then(() => refetch());
+    },
+    [onToggleDone, refetch],
+  );
+
+  const handleSaved = useCallback(() => {
+    onSaved();
+    refetch();
+  }, [onSaved, refetch]);
 
   const renderTaskRow = (t: Task) => {
     const items: KebabItem[] = [
@@ -49,7 +63,7 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
       <TaskRow
         key={t.id}
         task={t}
-        onToggleDone={onToggleDone}
+        onToggleDone={handleToggleDone}
         extra={<KebabMenu items={items} />}
       />
     );
@@ -94,7 +108,7 @@ export function DayTasksDrawer({ date, tasks, onToggleDone, onSaved, onClose }: 
         task={taskDrawerState}
         defaultDueDate={date ?? undefined}
         onClose={() => setTaskDrawerState(null)}
-        onSaved={onSaved}
+        onSaved={handleSaved}
       />
     </>
   );

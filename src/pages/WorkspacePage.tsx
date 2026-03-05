@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Virtuoso } from "react-virtuoso";
 import type { Task, TaskPriority, TaskStatus } from "../domain/task";
 import type { Group, Project, Bucket } from "../domain/master";
 import { listTasks, upsertTask, softDeleteTask } from "../db/tasksRepo";
@@ -542,7 +543,13 @@ export function WorkspacePage() {
                 </div>
                 <div className="ws-col-body">
                   {columnTasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
-                  {columnTasks.map((task) => renderTaskCard(task, toColKey(task.groupId)))}
+                  {columnTasks.length > 0 && (
+                    <Virtuoso
+                      data={columnTasks}
+                      style={{ height: "50vh", minHeight: 200 }}
+                      itemContent={(_, task) => renderTaskCard(task, toColKey(task.groupId))}
+                    />
+                  )}
                 </div>
               </div>
             );
@@ -585,7 +592,13 @@ export function WorkspacePage() {
                         </div>
                         <div className="ws-col-body">
                           {pc.tasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
-                          {pc.tasks.map((task) => renderTaskCard(task, toColKey(task.projectId)))}
+                          {pc.tasks.length > 0 && (
+                            <Virtuoso
+                              data={pc.tasks}
+                              style={{ height: "50vh", minHeight: 200 }}
+                              itemContent={(_, task) => renderTaskCard(task, toColKey(task.projectId))}
+                            />
+                          )}
                         </div>
                       </div>
                     );

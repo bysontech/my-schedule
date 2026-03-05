@@ -279,7 +279,6 @@ export function PlanningPage() {
       {/* DayDrawer (date selection from week/month → task list → create/edit) */}
       <DayTasksDrawer
         date={selectedDate}
-        tasks={filteredTasks}
         onToggleDone={handleToggleDone}
         onSaved={load}
         onClose={() => setSelectedDate(null)}

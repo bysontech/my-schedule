@@ -72,6 +72,14 @@ export function DashboardPage() {
     ensureNextInstanceForAllActiveTemplates().then(() => load());
   }, [load]);
 
+  // Clear undo toast timer on unmount to avoid leaking timers
+  useEffect(() => {
+    const ref = undoTimerRef;
+    return () => {
+      if (ref.current) clearTimeout(ref.current);
+    };
+  }, []);
+
   const strategy = useMemo(() => computeStrategySummary(tasks), [tasks]);
   const danger = useMemo(() => computeDangerCounts(tasks), [tasks]);
 
@@ -431,7 +439,6 @@ export function DashboardPage() {
       {/* Drawers */}
       <DayTasksDrawer
         date={selectedDate}
-        tasks={tasks}
         onToggleDone={handleToggleDone}
         onSaved={load}
         onClose={() => setSelectedDate(null)}
