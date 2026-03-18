@@ -13,15 +13,23 @@ export interface GroupSection {
   projects: ProjectSection[];
 }
 
+export interface HierarchyLabels {
+  uncategorized: string;
+  unknown: string;
+}
+
+const DEFAULT_LABELS: HierarchyLabels = { uncategorized: "未分類", unknown: "不明" };
+
 /**
  * Group tasks by group → project hierarchy.
- * groupId=null → "未分類" group section
- * projectId=null → "未分類" project section within each group
+ * groupId=null → uncategorized group section
+ * projectId=null → uncategorized project section within each group
  */
 export function groupByGroupProject(
   tasks: Task[],
   groups: Group[],
   projects: Project[],
+  labels: HierarchyLabels = DEFAULT_LABELS,
 ): GroupSection[] {
   // Build group map: groupId → { projectId → Task[] }
   const groupMap = new Map<string | null, Map<string | null, Task[]>>();
@@ -47,21 +55,21 @@ export function groupByGroupProject(
   for (const g of groups) {
     const projMap = groupMap.get(g.id);
     if (!projMap) continue;
-    result.push(buildGroupSection(g.id, g.name, projMap, projects, projectNameMap));
+    result.push(buildGroupSection(g.id, g.name, projMap, projects, projectNameMap, labels));
     groupMap.delete(g.id);
   }
 
   // Unassigned group (groupId=null)
   const nullProjMap = groupMap.get(null);
   if (nullProjMap) {
-    result.push(buildGroupSection(null, "未分類", nullProjMap, projects, projectNameMap));
+    result.push(buildGroupSection(null, labels.uncategorized, nullProjMap, projects, projectNameMap, labels));
     groupMap.delete(null);
   }
 
   // Any remaining (shouldn't happen but be safe)
   for (const [gId, projMap] of groupMap) {
-    const name = gId ? (groupNameMap.get(gId) ?? "不明") : "未分類";
-    result.push(buildGroupSection(gId, name, projMap, projects, projectNameMap));
+    const name = gId ? (groupNameMap.get(gId) ?? labels.unknown) : labels.uncategorized;
+    result.push(buildGroupSection(gId, name, projMap, projects, projectNameMap, labels));
   }
 
   return result;
@@ -73,6 +81,7 @@ function buildGroupSection(
   projMap: Map<string | null, Task[]>,
   allProjects: Project[],
   projectNameMap: Map<string, string>,
+  labels: HierarchyLabels,
 ): GroupSection {
   const projectSections: ProjectSection[] = [];
 
@@ -88,13 +97,13 @@ function buildGroupSection(
   // Unassigned project (projectId=null)
   const nullTasks = projMap.get(null);
   if (nullTasks) {
-    projectSections.push({ projectId: null, projectName: "未分類", tasks: nullTasks });
+    projectSections.push({ projectId: null, projectName: labels.uncategorized, tasks: nullTasks });
     projMap.delete(null);
   }
 
   // Any remaining projects (cross-group assignments)
   for (const [pId, tasks] of projMap) {
-    const name = pId ? (projectNameMap.get(pId) ?? "不明") : "未分類";
+    const name = pId ? (projectNameMap.get(pId) ?? labels.unknown) : labels.uncategorized;
     projectSections.push({ projectId: pId, projectName: name, tasks });
   }
 

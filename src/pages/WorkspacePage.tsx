@@ -12,6 +12,7 @@ import { TaskDrawer } from "../components/TaskDrawer";
 import { MasterDrawer } from "../components/MasterDrawer";
 import { FabMenu } from "../components/FabMenu";
 import { Toast } from "../components/Toast";
+import { useI18n } from "../i18n/I18nContext";
 
 type ViewMode = "group_board" | "single_group" | "project_board";
 type RangeFilter = "all" | "this_week" | "this_month" | "undone_only";
@@ -48,6 +49,7 @@ function getMonthRange(): [string, string] {
 }
 
 export function WorkspacePage() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -206,11 +208,11 @@ export function WorkspacePage() {
 
   // ---- Column name helpers ----
   const colName = (key: string) => {
-    if (key === COL_NULL) return "未分類";
+    if (key === COL_NULL) return t.uncategorized;
     if (viewMode === "project_board") {
-      return projects.find((p) => p.id === key)?.name ?? "不明";
+      return projects.find((p) => p.id === key)?.name ?? t.unknown;
     }
-    return groups.find((g) => g.id === key)?.name ?? "不明";
+    return groups.find((g) => g.id === key)?.name ?? t.unknown;
   };
 
   // ---- project_board hierarchical structure ----
@@ -253,7 +255,7 @@ export function WorkspacePage() {
       // (tasks with groupId matching but projectId=null)
       const uncatTasks = filteredTasks.filter((t) => t.groupId === g.id && t.projectId === null);
       if (uncatTasks.length > 0 || cols.length === 0) {
-        cols.unshift({ colKey: `${g.id}__uncat`, projectName: "未分類", tasks: uncatTasks });
+        cols.unshift({ colKey: `${g.id}__uncat`, projectName: t.uncategorized, tasks: uncatTasks });
       }
       if (cols.some((c) => c.tasks.length > 0) || groupProjects.length > 0) {
         result.push({ groupId: g.id, groupName: g.name, projectCols: cols });
@@ -269,14 +271,14 @@ export function WorkspacePage() {
     }));
     const nullUncatTasks = filteredTasks.filter((t) => t.groupId === null && t.projectId === null);
     if (nullUncatTasks.length > 0 || nullCols.length === 0) {
-      nullCols.unshift({ colKey: COL_NULL, projectName: "未分類", tasks: nullUncatTasks });
+      nullCols.unshift({ colKey: COL_NULL, projectName: t.uncategorized, tasks: nullUncatTasks });
     }
     if (nullCols.some((c) => c.tasks.length > 0) || nullGroupProjects.length > 0 || nullUncatTasks.length > 0) {
-      result.push({ groupId: null, groupName: "未分類", projectCols: nullCols });
+      result.push({ groupId: null, groupName: t.uncategorized, projectCols: nullCols });
     }
 
     return result;
-  }, [viewMode, groups, projects, filteredTasks]);
+  }, [viewMode, groups, projects, filteredTasks, t]);
 
   // ---- D&D handlers ----
   const handleDragStart = (taskId: string, sourceColKey: string) => {
@@ -327,7 +329,7 @@ export function WorkspacePage() {
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, [field]: sourceId } : t)),
       );
-      setToast("移動に失敗しました。元に戻しました。");
+      setToast(t.moveFailed);
     }
   };
 
@@ -369,21 +371,21 @@ export function WorkspacePage() {
 
   // Mode label helper
   const modeLabel = (m: ViewMode) =>
-    m === "group_board" ? "グループ" : m === "single_group" ? "単一" : "プロジェクト";
+    m === "group_board" ? t.groupBoard : m === "single_group" ? t.singleGroup : t.projectBoard;
 
   // Single-mode selector options
   const singleOptions = useMemo(() => {
     if (viewMode === "single_group" || viewMode === "group_board") {
       return [
-        { key: COL_NULL, label: "未分類" },
+        { key: COL_NULL, label: t.uncategorized },
         ...groups.map((g) => ({ key: g.id, label: g.name })),
       ];
     }
     return [
-      { key: COL_NULL, label: "未分類" },
+      { key: COL_NULL, label: t.uncategorized },
       ...projects.map((p) => ({ key: p.id, label: p.name })),
     ];
-  }, [viewMode, groups, projects]);
+  }, [viewMode, groups, projects, t]);
 
   // ---- Render task card (shared between modes) ----
   const renderTaskCard = (task: Task, dragColKey: string) => {
@@ -413,8 +415,8 @@ export function WorkspacePage() {
               {task.title}
             </span>
             <KebabMenu items={[
-              { label: "編集", onClick: () => handleEditTask(task) },
-              { label: "削除", danger: true, onClick: () => handleDeleteTask(task) },
+              { label: t.edit, onClick: () => handleEditTask(task) },
+              { label: t.delete_, danger: true, onClick: () => handleDeleteTask(task) },
             ]} />
           </div>
           {task.dueDate && (
@@ -448,7 +450,7 @@ export function WorkspacePage() {
           className={`btn-sm ${showFilters ? "btn-secondary" : "btn-ghost"}`}
           onClick={() => setShowFilters((v) => !v)}
         >
-          フィルタ {activeFilterCount > 0 && <span className="ws-filter-badge">{activeFilterCount}</span>}
+          {t.filter} {activeFilterCount > 0 && <span className="ws-filter-badge">{activeFilterCount}</span>}
         </button>
       </div>
 
@@ -459,7 +461,7 @@ export function WorkspacePage() {
             value={singleId ?? ""}
             onChange={(e) => setSingleId(e.target.value || undefined)}
           >
-            <option value="">グループを選択…</option>
+            <option value="">{t.selectGroup}</option>
             {singleOptions.map((o) => (
               <option key={o.key} value={o.key}>{o.label}</option>
             ))}
@@ -471,37 +473,37 @@ export function WorkspacePage() {
       {showFilters && (
         <div className="filter-bar">
           <div className="filter-item">
-            <label className="filter-label">範囲</label>
+            <label className="filter-label">{t.range}</label>
             <select value={rangeFilter} onChange={(e) => setRangeFilter(e.target.value as RangeFilter)}>
-              <option value="all">すべて</option>
-              <option value="this_week">今週</option>
-              <option value="this_month">今月</option>
-              <option value="undone_only">未完了のみ</option>
+              <option value="all">{t.all}</option>
+              <option value="this_week">{t.thisWeek}</option>
+              <option value="this_month">{t.thisMonth}</option>
+              <option value="undone_only">{t.undoneOnly}</option>
             </select>
           </div>
           <div className="filter-item">
-            <label className="filter-label">Bucket</label>
+            <label className="filter-label">{t.bucket}</label>
             <select value={filterBucketId} onChange={(e) => setFilterBucketId(e.target.value)}>
-              <option value="all">すべて</option>
+              <option value="all">{t.all}</option>
               {buckets.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div className="filter-item">
-            <label className="filter-label">優先度</label>
+            <label className="filter-label">{t.priority}</label>
             <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "all")}>
-              <option value="all">すべて</option>
+              <option value="all">{t.all}</option>
               <option value="high">High</option>
               <option value="med">Med</option>
               <option value="low">Low</option>
             </select>
           </div>
           <div className="filter-item">
-            <label className="filter-label">状態</label>
+            <label className="filter-label">{t.status}</label>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as TaskStatus | "all")}>
-              <option value="all">すべて</option>
-              <option value="todo">未着手</option>
-              <option value="in_progress">進行中</option>
-              <option value="done">完了</option>
+              <option value="all">{t.all}</option>
+              <option value="todo">{t.statusTodo}</option>
+              <option value="in_progress">{t.statusInProgress}</option>
+              <option value="done">{t.statusDone}</option>
             </select>
           </div>
         </div>
@@ -509,7 +511,7 @@ export function WorkspacePage() {
 
       {/* Single-group: prompt if not selected */}
       {viewMode === "single_group" && singleId === undefined && (
-        <div className="ws-empty-prompt">上のセレクタからグループを選択してください</div>
+        <div className="ws-empty-prompt">{t.selectGroupPrompt}</div>
       )}
 
       {/* Columns: group_board / single_group */}
@@ -533,16 +535,16 @@ export function WorkspacePage() {
                   <span className="ws-col-name">{colName(colKey)}</span>
                   <span className="ws-col-count">{columnTasks.length}</span>
                   <div className="ws-col-actions">
-                    <button className="ws-col-add" onClick={() => handleCreateTask(colKey)} title="タスク作成">+</button>
+                    <button className="ws-col-add" onClick={() => handleCreateTask(colKey)} title={t.createTask}>+</button>
                     {group && (
                       <KebabMenu items={[
-                        { label: "グループ編集", onClick: () => handleEditGroup(group) },
+                        { label: t.editGroup, onClick: () => handleEditGroup(group) },
                       ]} />
                     )}
                   </div>
                 </div>
                 <div className="ws-col-body">
-                  {columnTasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
+                  {columnTasks.length === 0 && <div className="ws-col-empty">{t.noTasks}</div>}
                   {columnTasks.length > 0 && (
                     <Virtuoso
                       data={columnTasks}
@@ -568,7 +570,7 @@ export function WorkspacePage() {
                   <span className="ws-proj-group-name">{gbg.groupName}</span>
                   {groupObj && (
                     <KebabMenu items={[
-                      { label: "グループ編集", onClick: () => handleEditGroup(groupObj) },
+                      { label: t.editGroup, onClick: () => handleEditGroup(groupObj) },
                     ]} />
                   )}
                 </div>
@@ -587,11 +589,11 @@ export function WorkspacePage() {
                           <span className="ws-col-name">{pc.projectName}</span>
                           <span className="ws-col-count">{pc.tasks.length}</span>
                           <div className="ws-col-actions">
-                            <button className="ws-col-add" onClick={() => handleCreateTask(pc.colKey)} title="タスク作成">+</button>
+                            <button className="ws-col-add" onClick={() => handleCreateTask(pc.colKey)} title={t.createTask}>+</button>
                           </div>
                         </div>
                         <div className="ws-col-body">
-                          {pc.tasks.length === 0 && <div className="ws-col-empty">タスクなし</div>}
+                          {pc.tasks.length === 0 && <div className="ws-col-empty">{t.noTasks}</div>}
                           {pc.tasks.length > 0 && (
                             <Virtuoso
                               data={pc.tasks}

@@ -1,5 +1,15 @@
 import { exportAll, validateBackup, importAll, type BackupJson } from "../db/backupRepo";
 
+export type ImportErrorCode = "json_parse_error" | "backup_format_error";
+
+export class ImportError extends Error {
+  code: ImportErrorCode;
+  constructor(code: ImportErrorCode) {
+    super(code);
+    this.code = code;
+  }
+}
+
 export async function downloadExport(): Promise<void> {
   const backup = await exportAll();
   const json = JSON.stringify(backup, null, 2);
@@ -21,11 +31,11 @@ export async function importFromFile(file: File): Promise<void> {
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error("JSONの解析に失敗しました。ファイルが壊れている可能性があります。");
+    throw new ImportError("json_parse_error");
   }
 
   if (!validateBackup(parsed)) {
-    throw new Error("バックアップ形式が不正です。正しいエクスポートファイルを選択してください。");
+    throw new ImportError("backup_format_error");
   }
 
   await importAll(parsed as BackupJson);

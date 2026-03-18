@@ -1,9 +1,12 @@
 import { useState, useRef } from "react";
-import { downloadExport, importFromFile } from "../utils/exportImport";
+import { downloadExport, importFromFile, ImportError } from "../utils/exportImport";
+import { useI18n } from "../i18n/I18nContext";
+import type { Locale } from "../i18n/types";
 
 type MessageType = "success" | "error" | null;
 
 export function SettingsPage() {
+  const { t, locale, setLocale } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string>("");
   const [messageType, setMessageType] = useState<MessageType>(null);
@@ -17,24 +20,28 @@ export function SettingsPage() {
   const handleExport = async () => {
     try {
       await downloadExport();
-      showMessage("エクスポートが完了しました。", "success");
+      showMessage(t.exportSuccess, "success");
     } catch (e) {
-      showMessage(`エクスポートに失敗しました: ${e instanceof Error ? e.message : String(e)}`, "error");
+      showMessage(`${t.exportError}${e instanceof Error ? e.message : String(e)}`, "error");
     }
   };
 
   const handleImport = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      showMessage("ファイルを選択してください。", "error");
+      showMessage(t.selectFile, "error");
       return;
     }
     setImporting(true);
     try {
       await importFromFile(file);
-      showMessage("インポートが完了しました。ページを再読み込みしてください。", "success");
+      showMessage(t.importSuccess, "success");
     } catch (e) {
-      showMessage(e instanceof Error ? e.message : String(e), "error");
+      if (e instanceof ImportError) {
+        showMessage(e.code === "json_parse_error" ? t.jsonParseError : t.backupFormatError, "error");
+      } else {
+        showMessage(e instanceof Error ? e.message : String(e), "error");
+      }
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -43,7 +50,7 @@ export function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <h2 className="dash-section-title">Settings</h2>
+      <h2 className="dash-section-title">{t.settings}</h2>
 
       {/* Message */}
       {messageType && (
@@ -52,23 +59,36 @@ export function SettingsPage() {
         </div>
       )}
 
+      {/* Language */}
+      <section className="settings-section">
+        <h3 className="settings-section-title">{t.language}</h3>
+        <p className="settings-description">{t.languageDesc}</p>
+        <div className="settings-lang-toggle">
+          {(["ja", "en"] as Locale[]).map((l) => (
+            <button
+              key={l}
+              className={`cal-view-btn ${locale === l ? "cal-view-btn--active" : ""}`}
+              onClick={() => setLocale(l)}
+            >
+              {l === "ja" ? "日本語" : "English"}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Export / Import: 2-column on PC */}
       <div className="settings-grid">
         {/* Export */}
         <section className="settings-section">
-          <h3 className="settings-section-title">Export (バックアップ)</h3>
-          <p className="settings-description">
-            全データ（タスク・グループ・プロジェクト・Bucket）をJSONファイルとしてダウンロードします。
-          </p>
-          <button onClick={handleExport}>JSONエクスポート</button>
+          <h3 className="settings-section-title">{t.exportBackup}</h3>
+          <p className="settings-description">{t.exportDesc}</p>
+          <button onClick={handleExport}>{t.jsonExport}</button>
         </section>
 
         {/* Import */}
         <section className="settings-section">
-          <h3 className="settings-section-title">Import (復元)</h3>
-          <div className="settings-warning">
-            インポートすると既存データは全て上書きされます。この操作は取り消せません。事前にエクスポートすることを推奨します。
-          </div>
+          <h3 className="settings-section-title">{t.importRestore}</h3>
+          <div className="settings-warning">{t.importWarning}</div>
           <div className="settings-import-row">
             <input type="file" accept=".json" ref={fileRef} />
             <button
@@ -76,7 +96,7 @@ export function SettingsPage() {
               onClick={handleImport}
               disabled={importing}
             >
-              {importing ? "処理中..." : "インポート実行"}
+              {importing ? t.processing : t.importExecute}
             </button>
           </div>
         </section>
@@ -84,11 +104,8 @@ export function SettingsPage() {
 
       {/* PWA Info */}
       <section className="settings-section">
-        <h3 className="settings-section-title">PWAインストール</h3>
-        <p className="settings-description">
-          ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択すると、
-          オフラインでも利用できるアプリとしてインストールできます。
-        </p>
+        <h3 className="settings-section-title">{t.pwaInstall}</h3>
+        <p className="settings-description">{t.pwaDesc}</p>
       </section>
     </div>
   );

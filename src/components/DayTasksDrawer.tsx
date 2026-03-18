@@ -9,6 +9,7 @@ import { Drawer } from "./Drawer";
 import { TaskRow } from "./TaskRow";
 import { KebabMenu, type KebabItem } from "./KebabMenu";
 import { TaskDrawer } from "./TaskDrawer";
+import { useI18n } from "../i18n/I18nContext";
 
 // TaskDrawer state: null=closed, undefined=create, Task=edit
 type TaskDrawerState = Task | null | undefined;
@@ -21,6 +22,7 @@ interface DayTasksDrawerProps {
 }
 
 export function DayTasksDrawer({ date, onToggleDone, onSaved, onClose }: DayTasksDrawerProps) {
+  const { t } = useI18n();
   const [taskDrawerState, setTaskDrawerState] = useState<TaskDrawerState>(null);
   const [dayTasks, setDayTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -38,9 +40,13 @@ export function DayTasksDrawer({ date, onToggleDone, onSaved, onClose }: DayTask
     refetch();
   }, [date, refetch]);
 
+  const hierarchyLabels = useMemo(
+    () => ({ uncategorized: t.uncategorized, unknown: t.unknown }),
+    [t],
+  );
   const hierarchy = useMemo(
-    () => groupByGroupProject(dayTasks, groups, projects),
-    [dayTasks, groups, projects],
+    () => groupByGroupProject(dayTasks, groups, projects, hierarchyLabels),
+    [dayTasks, groups, projects, hierarchyLabels],
   );
 
   const handleToggleDone = useCallback(
@@ -55,14 +61,14 @@ export function DayTasksDrawer({ date, onToggleDone, onSaved, onClose }: DayTask
     refetch();
   }, [onSaved, refetch]);
 
-  const renderTaskRow = (t: Task) => {
+  const renderTaskRow = (task: Task) => {
     const items: KebabItem[] = [
-      { label: "編集", onClick: () => setTaskDrawerState(t) },
+      { label: t.edit, onClick: () => setTaskDrawerState(task) },
     ];
     return (
       <TaskRow
-        key={t.id}
-        task={t}
+        key={task.id}
+        task={task}
         onToggleDone={handleToggleDone}
         extra={<KebabMenu items={items} />}
       />
@@ -78,11 +84,11 @@ export function DayTasksDrawer({ date, onToggleDone, onSaved, onClose }: DayTask
             onClick={() => setTaskDrawerState(undefined)}
             style={{ alignSelf: "flex-start", marginBottom: "0.5rem" }}
           >
-            + タスク作成
+            {t.addTask}
           </button>
 
           {dayTasks.length === 0 ? (
-            <p className="day-drawer-empty">この日の期限タスクはありません</p>
+            <p className="day-drawer-empty">{t.noDueTasks}</p>
           ) : (
             <div className="hier-sections">
               {hierarchy.map((gs) => (

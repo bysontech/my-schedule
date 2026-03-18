@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Task } from "../domain/task";
-import { getWeekDays, tasksByDueDateMap, weekdayLabel } from "../utils/calendar";
+import { getWeekDays, tasksByDueDateMap } from "../utils/calendar";
+import { useI18n } from "../i18n/I18nContext";
 import { getDueBucket } from "../utils/dateBuckets";
 
 interface CalendarWeekGridProps {
@@ -10,6 +11,7 @@ interface CalendarWeekGridProps {
 }
 
 export function CalendarWeekGrid({ refDate, tasks, onSelectDate }: CalendarWeekGridProps) {
+  const { t } = useI18n();
   const days = useMemo(() => getWeekDays(refDate), [refDate]);
   const dueDateMap = useMemo(() => tasksByDueDateMap(tasks), [tasks]);
 
@@ -22,7 +24,7 @@ export function CalendarWeekGrid({ refDate, tasks, onSelectDate }: CalendarWeekG
             key={cell.date}
             className={`cwg-dow ${i >= 5 ? "cwg-dow--weekend" : ""}`}
           >
-            {weekdayLabel(i)}
+            {t.weekdaysShort[i]}
           </span>
         ))}
       </div>

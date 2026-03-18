@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useI18n } from "../i18n/I18nContext";
 
 export interface KebabItem {
   label: string;
@@ -11,6 +12,7 @@ interface KebabMenuProps {
 }
 
 export function KebabMenu({ items }: KebabMenuProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -33,7 +35,7 @@ export function KebabMenu({ items }: KebabMenuProps) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        aria-label="メニュー"
+        aria-label={t.menu}
       >
         …
       </button>

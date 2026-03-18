@@ -109,6 +109,7 @@ export interface GroupProgress {
 export function computeGroupProgress(
   tasks: Task[],
   groups: { id: string; name: string }[],
+  uncategorizedLabel = "未分類",
 ): GroupProgress[] {
   const acc = new Map<string | null, { total: number; done: number }>();
 
@@ -139,7 +140,7 @@ export function computeGroupProgress(
   if (unassigned) {
     result.push({
       groupId: null,
-      groupName: "未分類",
+      groupName: uncategorizedLabel,
       total: unassigned.total,
       done: unassigned.done,
       rate: Math.round((unassigned.done / unassigned.total) * 100),
@@ -162,6 +163,7 @@ export interface ProjectProgress {
 export function computeProjectProgress(
   tasks: Task[],
   projects: { id: string; name: string }[],
+  uncategorizedLabel = "未分類",
 ): ProjectProgress[] {
   const acc = new Map<string | null, { total: number; done: number }>();
 
@@ -192,7 +194,7 @@ export function computeProjectProgress(
   if (unassigned) {
     result.push({
       projectId: null,
-      projectName: "未分類",
+      projectName: uncategorizedLabel,
       total: unassigned.total,
       done: unassigned.done,
       rate: Math.round((unassigned.done / unassigned.total) * 100),
@@ -214,6 +216,7 @@ export function computeProjectProgressByGroup(
   tasks: Task[],
   groups: { id: string; name: string }[],
   projects: { id: string; name: string; groupId: string | null }[],
+  uncategorizedLabel = "未分類",
 ): GroupedProjectProgress[] {
   // Build task counts by projectId
   const projCounts = new Map<string | null, { total: number; done: number }>();
@@ -262,7 +265,7 @@ export function computeProjectProgressByGroup(
       const done = directTasks.filter((t) => t.status === "done").length;
       entries.push({
         projectId: null,
-        projectName: "未分類",
+        projectName: uncategorizedLabel,
         total: directTasks.length,
         done,
         rate: Math.round((done / directTasks.length) * 100),
@@ -281,14 +284,14 @@ export function computeProjectProgressByGroup(
     const done = nullDirectTasks.filter((t) => t.status === "done").length;
     nullEntries.push({
       projectId: null,
-      projectName: "未分類",
+      projectName: uncategorizedLabel,
       total: nullDirectTasks.length,
       done,
       rate: Math.round((done / nullDirectTasks.length) * 100),
     });
   }
   if (nullEntries.length > 0) {
-    result.push({ groupId: null, groupName: "未分類", projects: nullEntries });
+    result.push({ groupId: null, groupName: uncategorizedLabel, projects: nullEntries });
   }
 
   return result;

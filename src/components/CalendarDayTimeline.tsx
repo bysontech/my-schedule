@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Task } from "../domain/task";
 import { getDayTasks, splitDayTasks, computeBlock } from "../utils/dayView";
+import { useI18n } from "../i18n/I18nContext";
 
 const HOUR_START = 0;
 const HOUR_END = 24;
@@ -20,6 +21,7 @@ export function CalendarDayTimeline({
   onSelectTask,
   onCreateTask,
 }: CalendarDayTimelineProps) {
+  const { t } = useI18n();
   const dayTasks = useMemo(() => getDayTasks(tasks, date), [tasks, date]);
   const { unscheduled, timed } = useMemo(() => splitDayTasks(dayTasks), [dayTasks]);
 
@@ -33,7 +35,7 @@ export function CalendarDayTimeline({
         <button
           className="cdt-add-btn"
           onClick={() => onCreateTask(date)}
-          title="タスク作成"
+          title={t.createTask}
         >
           +
         </button>
@@ -42,7 +44,7 @@ export function CalendarDayTimeline({
       {/* Unscheduled lane */}
       {unscheduled.length > 0 && (
         <div className="cdt-unscheduled">
-          <span className="cdt-lane-label">未定</span>
+          <span className="cdt-lane-label">{t.unscheduled}</span>
           <div className="cdt-unscheduled-list">
             {unscheduled.map((t) => {
               const isDone = t.status === "done";
@@ -102,7 +104,7 @@ export function CalendarDayTimeline({
 
       {/* Empty state */}
       {dayTasks.length === 0 && (
-        <div className="cdt-empty">この日のタスクはありません</div>
+        <div className="cdt-empty">{t.noTasksThisDay}</div>
       )}
     </div>
   );

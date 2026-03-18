@@ -11,9 +11,12 @@ const WorkspacePage = lazy(() => import("./pages/WorkspacePage").then((m) => ({ 
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 
 function PageFallback() {
+  // Cannot use useI18n here (outside router context), use localStorage directly
+  const locale = localStorage.getItem("my-schedule-locale") ?? "ja";
+  const text = locale === "en" ? "Loading…" : "読み込み中…";
   return (
     <div style={{ padding: "1rem", textAlign: "center", color: "var(--color-text-secondary, #64748b)" }}>
-      読み込み中…
+      {text}
     </div>
   );
 }

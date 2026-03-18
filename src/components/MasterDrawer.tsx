@@ -5,6 +5,7 @@ import { upsertProject } from "../db/projectsRepo";
 import { upsertBucket } from "../db/bucketsRepo";
 import { listGroups } from "../db/groupsRepo";
 import { Drawer } from "./Drawer";
+import { useI18n } from "../i18n/I18nContext";
 
 type MasterType = "group" | "project" | "bucket";
 
@@ -16,6 +17,7 @@ interface MasterDrawerProps {
 }
 
 export function MasterDrawer({ open, onClose, onSaved }: MasterDrawerProps) {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [groupId, setGroupId] = useState("");
   const [groups, setGroups] = useState<Group[]>([]);
@@ -41,9 +43,9 @@ export function MasterDrawer({ open, onClose, onSaved }: MasterDrawerProps) {
     }
   }, [open]);
 
-  const typeLabel = masterType === "group" ? "グループ"
-    : masterType === "project" ? "プロジェクト"
-    : "Bucket";
+  const typeLabel = masterType === "group" ? t.masterTypeGroup
+    : masterType === "project" ? t.masterTypeProject
+    : t.masterTypeBucket;
 
   const handleSave = async () => {
     const trimmed = name.trim();
@@ -85,16 +87,16 @@ export function MasterDrawer({ open, onClose, onSaved }: MasterDrawerProps) {
     <Drawer
       open={!!open}
       onClose={onClose}
-      title={`${typeLabel}${isCreate ? "作成" : "編集"}`}
+      title={isCreate ? t.masterCreate(typeLabel) : t.masterEdit(typeLabel)}
     >
       <div className="drawer-form">
         <div className="form-group">
-          <label className="form-label">{typeLabel}名 <span className="form-required">*</span></label>
+          <label className="form-label">{t.masterNameLabel(typeLabel)} <span className="form-required">*</span></label>
           <input
             type="text"
             value={name}
             className={nameError ? "input-error" : ""}
-            placeholder={`${typeLabel}名を入力`}
+            placeholder={t.masterNamePlaceholder(typeLabel)}
             onChange={(e) => { setName(e.target.value); setNameError(false); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -103,14 +105,14 @@ export function MasterDrawer({ open, onClose, onSaved }: MasterDrawerProps) {
               }
             }}
           />
-          {nameError && <p className="form-error">名前は必須です</p>}
+          {nameError && <p className="form-error">{t.nameRequired}</p>}
         </div>
 
         {masterType === "project" && (
           <div className="form-group">
-            <label className="form-label">所属グループ</label>
+            <label className="form-label">{t.belongsToGroup}</label>
             <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-              <option value="">なし</option>
+              <option value="">{t.none}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
@@ -120,9 +122,9 @@ export function MasterDrawer({ open, onClose, onSaved }: MasterDrawerProps) {
 
         <div className="form-actions">
           <button onClick={handleSave} disabled={!name.trim()}>
-            {isCreate ? "作成" : "保存"}
+            {isCreate ? t.create : t.save}
           </button>
-          <button className="btn-secondary" onClick={onClose}>キャンセル</button>
+          <button className="btn-secondary" onClick={onClose}>{t.cancel}</button>
         </div>
       </div>
     </Drawer>

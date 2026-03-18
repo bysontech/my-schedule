@@ -11,17 +11,18 @@ import { CalendarYear } from "../components/CalendarYear";
 import { CalendarDayTimeline } from "../components/CalendarDayTimeline";
 import { TaskDrawer } from "../components/TaskDrawer";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
+import { useI18n } from "../i18n/I18nContext";
 
 type ViewMode = "week" | "month" | "year" | "day";
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = { high: "High", med: "Med", low: "Low" };
-const STATUS_LABELS: Record<TaskStatus, string> = { todo: "未着手", in_progress: "進行中", done: "完了" };
+// Labels moved to i18n; computed inside component
 
 function fmtDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
 export function PlanningPage() {
+  const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -109,8 +110,8 @@ export function PlanningPage() {
   const goToday = () => setCursorDate(new Date());
 
   const navTitle = (() => {
-    if (viewMode === "year") return `${cursorYear}年`;
-    if (viewMode === "month") return `${cursorYear}年${cursorMonth}月`;
+    if (viewMode === "year") return t.calYearTitle(cursorYear);
+    if (viewMode === "month") return t.calMonthTitle(cursorYear, cursorMonth);
     if (viewMode === "day") return fmtDate(cursorDate);
     // week
     const d = new Date(cursorDate);
@@ -157,7 +158,7 @@ export function PlanningPage() {
               className={`cal-view-btn ${viewMode === mode ? "cal-view-btn--active" : ""}`}
               onClick={() => setViewMode(mode)}
             >
-              {mode === "day" ? "日" : mode === "week" ? "週" : mode === "month" ? "月" : "年"}
+              {mode === "day" ? t.calDay : mode === "week" ? t.calWeek : mode === "month" ? t.calMonth : t.calYear}
             </button>
           ))}
         </div>
@@ -166,7 +167,7 @@ export function PlanningPage() {
       {/* Navigation */}
       <div className="cal-nav">
         <button className="cal-nav-btn" onClick={goPrev}>&lt;</button>
-        <button className="cal-nav-today" onClick={goToday}>今日</button>
+        <button className="cal-nav-today" onClick={goToday}>{t.calToday}</button>
         <span className="cal-nav-title">{navTitle}</span>
         <button className="cal-nav-btn" onClick={goNext}>&gt;</button>
       </div>
@@ -177,10 +178,10 @@ export function PlanningPage() {
           className={`btn-sm ${showFilter ? "btn-secondary" : "btn-ghost"}`}
           onClick={() => setShowFilter((v) => !v)}
         >
-          {showFilter ? "フィルタを隠す" : "詳細フィルタ"}
+          {showFilter ? t.hideFilter : t.detailFilter}
         </button>
         {hasActiveFilter && (
-          <span className="planning-filter-active">フィルタ適用中</span>
+          <span className="planning-filter-active">{t.filterActive}</span>
         )}
       </div>
 
@@ -189,12 +190,12 @@ export function PlanningPage() {
         <div className="filter-bar">
           {groups.length > 0 && (
             <div className="filter-item">
-              <span className="filter-label">グループ</span>
+              <span className="filter-label">{t.group}</span>
               <select
                 value={filterGroupId}
                 onChange={(e) => { setFilterGroupId(e.target.value); setFilterProjectId("all"); }}
               >
-                <option value="all">すべて</option>
+                <option value="all">{t.all}</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
@@ -202,9 +203,9 @@ export function PlanningPage() {
 
           {projects.length > 0 && (
             <div className="filter-item">
-              <span className="filter-label">プロジェクト</span>
+              <span className="filter-label">{t.project}</span>
               <select value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)}>
-                <option value="all">すべて</option>
+                <option value="all">{t.all}</option>
                 {filteredProjectsByGroup.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
@@ -212,30 +213,30 @@ export function PlanningPage() {
 
           {buckets.length > 0 && (
             <div className="filter-item">
-              <span className="filter-label">Bucket</span>
+              <span className="filter-label">{t.bucket}</span>
               <select value={filterBucketId} onChange={(e) => setFilterBucketId(e.target.value)}>
-                <option value="all">すべて</option>
+                <option value="all">{t.all}</option>
                 {buckets.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
           )}
 
           <div className="filter-item">
-            <span className="filter-label">優先度</span>
+            <span className="filter-label">{t.priority}</span>
             <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "all")}>
-              <option value="all">すべて</option>
+              <option value="all">{t.all}</option>
               {(["high", "med", "low"] as const).map((p) => (
-                <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+                <option key={p} value={p}>{p === "high" ? t.priorityHigh : p === "med" ? t.priorityMed : t.priorityLow}</option>
               ))}
             </select>
           </div>
 
           <div className="filter-item">
-            <span className="filter-label">状態</span>
+            <span className="filter-label">{t.status}</span>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as TaskStatus | "all")}>
-              <option value="all">すべて</option>
+              <option value="all">{t.all}</option>
               {(["todo", "in_progress", "done"] as const).map((s) => (
-                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                <option key={s} value={s}>{s === "todo" ? t.statusTodo : s === "in_progress" ? t.statusInProgress : t.statusDone}</option>
               ))}
             </select>
           </div>

@@ -9,6 +9,7 @@ import { listBuckets } from "../db/bucketsRepo";
 import { upsertGroup } from "../db/groupsRepo";
 import { upsertProject } from "../db/projectsRepo";
 import { Drawer } from "./Drawer";
+import { useI18n } from "../i18n/I18nContext";
 
 interface TaskDrawerProps {
   /** null = closed, undefined = create mode, Task = edit mode */
@@ -26,6 +27,7 @@ interface TaskDrawerProps {
 type InlineCreate = "group" | "project" | null;
 
 export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjectId, onClose, onSaved }: TaskDrawerProps) {
+  const { t } = useI18n();
   const isOpen = task !== null;
   const isCreate = task === undefined;
 
@@ -200,20 +202,20 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
   };
 
   return (
-    <Drawer open={isOpen} onClose={onClose} title={isCreate ? "タスク作成" : "タスク編集"}>
+    <Drawer open={isOpen} onClose={onClose} title={isCreate ? t.taskCreate : t.taskEdit}>
       <div className="drawer-form">
         {/* Inline create panel */}
         {inlineCreate && (
           <div className="inline-create-panel">
             <h4 className="inline-create-title">
-              {inlineCreate === "group" ? "グループ作成" : "プロジェクト作成"}
+              {inlineCreate === "group" ? t.groupCreate : t.projectCreate}
             </h4>
             <div className="form-group">
               <input
                 type="text"
                 value={inlineName}
                 className={inlineNameError ? "input-error" : ""}
-                placeholder={inlineCreate === "group" ? "グループ名" : "プロジェクト名"}
+                placeholder={inlineCreate === "group" ? t.groupNamePlaceholder : t.projectNamePlaceholder}
                 onChange={(e) => { setInlineName(e.target.value); setInlineNameError(false); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -223,13 +225,13 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
                 }}
                 autoFocus
               />
-              {inlineNameError && <p className="form-error">名前は必須です</p>}
+              {inlineNameError && <p className="form-error">{t.nameRequired}</p>}
             </div>
             {inlineCreate === "project" && (
               <div className="form-group">
-                <label className="form-label">所属グループ</label>
+                <label className="form-label">{t.belongsToGroup}</label>
                 <select value={inlineGroupId} onChange={(e) => setInlineGroupId(e.target.value)}>
-                  <option value="">なし</option>
+                  <option value="">{t.none}</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -237,8 +239,8 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
               </div>
             )}
             <div className="inline-create-actions">
-              <button className="btn-sm" onClick={handleInlineCreateSave} disabled={!inlineName.trim()}>作成</button>
-              <button className="btn-sm btn-ghost" onClick={handleInlineCreateCancel}>戻る</button>
+              <button className="btn-sm" onClick={handleInlineCreateSave} disabled={!inlineName.trim()}>{t.create}</button>
+              <button className="btn-sm btn-ghost" onClick={handleInlineCreateCancel}>{t.back}</button>
             </div>
           </div>
         )}
@@ -246,19 +248,19 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
         {/* Main form (always rendered to preserve input) */}
         <div style={inlineCreate ? { display: "none" } : undefined}>
           <div className="form-group">
-            <label className="form-label">タイトル <span className="form-required">*</span></label>
+            <label className="form-label">{t.title} <span className="form-required">*</span></label>
             <input
               type="text"
               value={title}
               className={titleError ? "input-error" : ""}
-              placeholder="タスク名"
+              placeholder={t.taskNamePlaceholder}
               onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
             />
-            {titleError && <p className="form-error">タイトルは必須です</p>}
+            {titleError && <p className="form-error">{t.titleRequired}</p>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">期限</label>
+            <label className="form-label">{t.dueDate}</label>
             <input
               type="date"
               value={dueDate}
@@ -267,7 +269,7 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
           </div>
 
           <div className="form-group">
-            <label className="form-label">開始時刻</label>
+            <label className="form-label">{t.startTime}</label>
             <div className="form-time-row">
               <input
                 type="time"
@@ -281,7 +283,7 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
           </div>
 
           <div className="form-group">
-            <label className="form-label">終了時刻</label>
+            <label className="form-label">{t.endTime}</label>
             <div className="form-time-row">
               <input
                 type="time"
@@ -292,35 +294,35 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
                 <button type="button" className="form-time-clear" onClick={() => setEndAt("")}>×</button>
               )}
             </div>
-            {timeError && <p className="form-error">終了は開始より後にしてください</p>}
+            {timeError && <p className="form-error">{t.endAfterStart}</p>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">優先度</label>
+            <label className="form-label">{t.priority}</label>
             <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
-              <option value="high">High</option>
-              <option value="med">Med</option>
-              <option value="low">Low</option>
+              <option value="high">{t.priorityHigh}</option>
+              <option value="med">{t.priorityMed}</option>
+              <option value="low">{t.priorityLow}</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">状態</label>
+            <label className="form-label">{t.status}</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}>
-              <option value="todo">未着手</option>
-              <option value="in_progress">進行中</option>
-              <option value="done">完了</option>
+              <option value="todo">{t.statusTodo}</option>
+              <option value="in_progress">{t.statusInProgress}</option>
+              <option value="done">{t.statusDone}</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">グループ</label>
+            <label className="form-label">{t.group}</label>
             <div className="form-select-with-add">
               <select
                 value={groupId}
                 onChange={(e) => { setGroupId(e.target.value); setProjectId(""); }}
               >
-                <option value="">なし</option>
+                <option value="">{t.none}</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
@@ -329,7 +331,7 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
                 type="button"
                 className="form-inline-add"
                 onClick={() => { setInlineCreate("group"); setInlineGroupId(""); }}
-                title="グループ作成"
+                title={t.groupCreate}
               >
                 +
               </button>
@@ -337,10 +339,10 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
           </div>
 
           <div className="form-group">
-            <label className="form-label">プロジェクト</label>
+            <label className="form-label">{t.project}</label>
             <div className="form-select-with-add">
               <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-                <option value="">なし</option>
+                <option value="">{t.none}</option>
                 {filteredProjects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -349,7 +351,7 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
                 type="button"
                 className="form-inline-add"
                 onClick={() => { setInlineCreate("project"); setInlineGroupId(groupId); }}
-                title="プロジェクト作成"
+                title={t.projectCreate}
               >
                 +
               </button>
@@ -358,7 +360,7 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
 
           {buckets.length > 0 && (
             <div className="form-group">
-              <label className="form-label">Bucket</label>
+              <label className="form-label">{t.bucket}</label>
               <div className="bucket-checks">
                 {buckets.map((b) => {
                   const checked = bucketIds.includes(b.id);
@@ -377,20 +379,20 @@ export function TaskDrawer({ task, defaultDueDate, defaultGroupId, defaultProjec
           )}
 
           <div className="form-group">
-            <label className="form-label">メモ</label>
+            <label className="form-label">{t.memo}</label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               rows={3}
-              placeholder="メモ（任意）"
+              placeholder={t.memoPlaceholder}
             />
           </div>
 
           <div className="form-actions">
             <button onClick={handleSave} disabled={!title.trim()}>
-              {isCreate ? "作成" : "保存"}
+              {isCreate ? t.create : t.save}
             </button>
-            <button className="btn-secondary" onClick={onClose}>キャンセル</button>
+            <button className="btn-secondary" onClick={onClose}>{t.cancel}</button>
           </div>
         </div>
       </div>

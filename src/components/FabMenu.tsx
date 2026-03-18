@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useI18n } from "../i18n/I18nContext";
 
 interface FabMenuProps {
   onCreateTask: () => void;
@@ -7,6 +8,7 @@ interface FabMenuProps {
 }
 
 export function FabMenu({ onCreateTask, onCreateGroup, onCreateProject }: FabMenuProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   const close = useCallback(() => setOpen(false), []);
@@ -32,20 +34,20 @@ export function FabMenu({ onCreateTask, onCreateGroup, onCreateProject }: FabMen
         {open && (
           <div className="fab-menu-items">
             <button className="fab-menu-item" onClick={() => handleAction(onCreateTask)}>
-              タスク作成
+              {t.createTask}
             </button>
             <button className="fab-menu-item" onClick={() => handleAction(onCreateGroup)}>
-              グループ作成
+              {t.groupCreate}
             </button>
             <button className="fab-menu-item" onClick={() => handleAction(onCreateProject)}>
-              プロジェクト作成
+              {t.projectCreate}
             </button>
           </div>
         )}
         <button
           className="fab"
           onClick={() => setOpen((v) => !v)}
-          aria-label="作成メニュー"
+          aria-label={t.createMenu}
         >
           {open ? "×" : "+"}
         </button>

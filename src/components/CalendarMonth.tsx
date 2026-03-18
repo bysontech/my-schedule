@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Task } from "../domain/task";
-import { getMonthGrid, tasksByDueDateMap, weekdayLabel } from "../utils/calendar";
+import { getMonthGrid, tasksByDueDateMap } from "../utils/calendar";
+import { useI18n } from "../i18n/I18nContext";
 
 interface CalendarMonthProps {
   year: number;
@@ -10,6 +11,7 @@ interface CalendarMonthProps {
 }
 
 export function CalendarMonth({ year, month, tasks, onSelectDate }: CalendarMonthProps) {
+  const { t } = useI18n();
   const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
   const dueDateMap = useMemo(() => tasksByDueDateMap(tasks), [tasks]);
 
@@ -19,7 +21,7 @@ export function CalendarMonth({ year, month, tasks, onSelectDate }: CalendarMont
       <div className="cal-month-header">
         {Array.from({ length: 7 }, (_, i) => (
           <span key={i} className={`cal-month-dow ${i >= 5 ? "cal-month-dow--weekend" : ""}`}>
-            {weekdayLabel(i)}
+            {t.weekdaysShort[i]}
           </span>
         ))}
       </div>

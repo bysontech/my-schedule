@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Task } from "../domain/task";
 import { formatDate, todayStr } from "../utils/calendar";
+import { useI18n } from "../i18n/I18nContext";
 
 interface CalendarYearProps {
   year: number;
@@ -8,9 +9,8 @@ interface CalendarYearProps {
   onSelectMonth: (year: number, month: number) => void;
 }
 
-const MONTH_NAMES = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-
 export function CalendarYear({ year, tasks, onSelectMonth }: CalendarYearProps) {
+  const { t } = useI18n();
   const today = todayStr();
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -62,7 +62,7 @@ export function CalendarYear({ year, tasks, onSelectMonth }: CalendarYearProps) 
   return (
     <div className="cal-year">
       <div className="cal-year-grid">
-        {MONTH_NAMES.map((name, i) => {
+        {t.monthNames.map((name, i) => {
           const month = i + 1;
           const isCurrentMonth = year === currentYear && month === currentMonth;
           const count = monthCounts[i];
@@ -81,7 +81,7 @@ export function CalendarYear({ year, tasks, onSelectMonth }: CalendarYearProps) 
               </div>
               <div className="cal-year-mini">
                 <div className="cal-year-mini-header">
-                  {["月", "火", "水", "木", "金", "土", "日"].map((d) => (
+                  {t.weekdaysShort.map((d) => (
                     <span key={d} className="cal-year-mini-dow">{d}</span>
                   ))}
                 </div>

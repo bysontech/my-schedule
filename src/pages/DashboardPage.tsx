@@ -21,6 +21,7 @@ import { CalendarWeekGrid } from "../components/CalendarWeekGrid";
 import { CalendarDayTimeline } from "../components/CalendarDayTimeline";
 import { DayTasksDrawer } from "../components/DayTasksDrawer";
 import { Toast } from "../components/Toast";
+import { useI18n } from "../i18n/I18nContext";
 
 type CalendarView = "week" | "month" | "day";
 type ProgressView = "group" | "project";
@@ -40,6 +41,7 @@ function fmtDate(d: Date): string {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -90,12 +92,12 @@ export function DashboardPage() {
   );
 
   const groupProgress = useMemo(
-    () => computeGroupProgress(periodTasks, groups),
-    [periodTasks, groups],
+    () => computeGroupProgress(periodTasks, groups, t.uncategorized),
+    [periodTasks, groups, t],
   );
   const groupedProjectProgress = useMemo(
-    () => computeProjectProgressByGroup(periodTasks, groups, projects),
-    [periodTasks, groups, projects],
+    () => computeProjectProgressByGroup(periodTasks, groups, projects, t.uncategorized),
+    [periodTasks, groups, projects, t],
   );
 
   const dangerTotal = danger.overdue + danger.today + danger.thisWeekHigh;
@@ -108,11 +110,11 @@ export function DashboardPage() {
       const wasDone = task.status === "done";
       setUndoEntry({
         taskId: id,
-        message: wasDone ? "未完了に戻しました" : "完了にしました",
+        message: wasDone ? t.undoMarkedNotDone : t.undoMarkedDone,
       });
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     }
-  }, [load, tasks]);
+  }, [load, tasks, t]);
 
   const handleUndo = useCallback(async () => {
     if (!undoEntry) return;
@@ -165,7 +167,7 @@ export function DashboardPage() {
   };
 
   const calTitle = (() => {
-    if (calView === "month") return `${calYear}年${calMonth}月`;
+    if (calView === "month") return t.calMonthTitle(calYear, calMonth);
     if (calView === "day") return fmtDate(calRef);
     // week
     const d = new Date(calRef);
@@ -207,32 +209,32 @@ export function DashboardPage() {
       <button
         className="fab"
         onClick={() => { setTaskDrawerDefaultDate(undefined); setTaskDrawerState(undefined); }}
-        aria-label="タスク作成"
+        aria-label={t.createTask}
       >
         +
       </button>
 
       {/* ── 上段: 戦略サマリー ── */}
       <section className="dash-section">
-        <h2 className="dash-section-title">戦略サマリー</h2>
+        <h2 className="dash-section-title">{t.strategySummary}</h2>
         <div className="dash-cards">
           <div className="dash-stat">
             <span className="dash-stat-value">{strategy.total}</span>
-            <span className="dash-stat-label">総タスク</span>
+            <span className="dash-stat-label">{t.totalTasks}</span>
           </div>
           <div className="dash-stat">
             <span className="dash-stat-value">{strategy.inProgress}</span>
-            <span className="dash-stat-label">進行中</span>
+            <span className="dash-stat-label">{t.inProgress}</span>
           </div>
           <div className="dash-stat">
             <span className="dash-stat-value">{strategy.completionRate}%</span>
             <span className="dash-stat-sub">{strategy.done} / {strategy.total}</span>
-            <span className="dash-stat-label">完了率</span>
+            <span className="dash-stat-label">{t.completionRate}</span>
           </div>
           <div className="dash-stat">
             <span className="dash-stat-value">{strategy.thisWeekRate}%</span>
             <span className="dash-stat-sub">{strategy.thisWeekDone} / {strategy.thisWeekTotal}</span>
-            <span className="dash-stat-label">今週達成率</span>
+            <span className="dash-stat-label">{t.weeklyRate}</span>
           </div>
         </div>
       </section>
@@ -240,7 +242,7 @@ export function DashboardPage() {
       {/* ── 危険ゾーン ── */}
       <section className="dash-section">
         <h2 className={`dash-section-title ${dangerTotal > 0 ? "dash-section-title--alert" : ""}`}>
-          危険ゾーン
+          {t.dangerZone}
         </h2>
         <div className="dash-cards">
           <button
@@ -248,21 +250,21 @@ export function DashboardPage() {
             onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.overdue}</span>
-            <span className="dash-card-label">期限切れ</span>
+            <span className="dash-card-label">{t.overdue}</span>
           </button>
           <button
             className={`dash-card ${danger.today > 0 ? "dash-card--danger" : ""}`}
             onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.today}</span>
-            <span className="dash-card-label">今日期限</span>
+            <span className="dash-card-label">{t.todayDue}</span>
           </button>
           <button
             className={`dash-card ${danger.thisWeekHigh > 0 ? "dash-card--caution" : ""}`}
             onClick={() => navigate("/workspace")}
           >
             <span className="dash-card-count">{danger.thisWeekHigh}</span>
-            <span className="dash-card-label">今週 High</span>
+            <span className="dash-card-label">{t.thisWeekHigh}</span>
           </button>
         </div>
 
@@ -271,7 +273,7 @@ export function DashboardPage() {
           <div className="dash-danger-preview">
             {quickOverdue.length > 0 && (
               <div className="dash-danger-group">
-                <span className="dash-danger-group-label dash-danger-group-label--danger">期限切れ</span>
+                <span className="dash-danger-group-label dash-danger-group-label--danger">{t.overdue}</span>
                 {quickOverdue.map((t) => (
                   <TaskRow
                     key={t.id}
@@ -284,7 +286,7 @@ export function DashboardPage() {
             )}
             {quickToday.length > 0 && (
               <div className="dash-danger-group">
-                <span className="dash-danger-group-label dash-danger-group-label--danger">今日</span>
+                <span className="dash-danger-group-label dash-danger-group-label--danger">{t.today}</span>
                 {quickToday.map((t) => (
                   <TaskRow
                     key={t.id}
@@ -302,7 +304,7 @@ export function DashboardPage() {
       {/* ── カレンダー ── */}
       <section className="dash-section">
         <div className="cal-toolbar">
-          <h2 className="dash-section-title" style={{ margin: 0 }}>カレンダー</h2>
+          <h2 className="dash-section-title" style={{ margin: 0 }}>{t.calendar}</h2>
           <div className="cal-view-toggle">
             {(["day", "week", "month"] as CalendarView[]).map((mode) => (
               <button
@@ -310,7 +312,7 @@ export function DashboardPage() {
                 className={`cal-view-btn ${calView === mode ? "cal-view-btn--active" : ""}`}
                 onClick={() => setCalView(mode)}
               >
-                {mode === "day" ? "日" : mode === "week" ? "週" : "月"}
+                {mode === "day" ? t.calDay : mode === "week" ? t.calWeek : t.calMonth}
               </button>
             ))}
           </div>
@@ -318,7 +320,7 @@ export function DashboardPage() {
 
         <div className="cal-nav">
           <button className="cal-nav-btn" onClick={goCalPrev}>&lt;</button>
-          <button className="cal-nav-today" onClick={goCalToday}>今日</button>
+          <button className="cal-nav-today" onClick={goCalToday}>{t.calToday}</button>
           <span className="cal-nav-title">{calTitle}</span>
           <button className="cal-nav-btn" onClick={goCalNext}>&gt;</button>
         </div>
@@ -351,20 +353,20 @@ export function DashboardPage() {
       {/* ── 分野別進捗 ── */}
       <section className="dash-section">
         <div className="dash-progress-header">
-          <h2 className="dash-section-title" style={{ margin: 0 }}>分野別進捗</h2>
+          <h2 className="dash-section-title" style={{ margin: 0 }}>{t.fieldProgress}</h2>
           <div className="dash-progress-toggles">
             <div className="cal-view-toggle">
               <button
                 className={`cal-view-btn ${progressView === "group" ? "cal-view-btn--active" : ""}`}
                 onClick={() => setProgressView("group")}
               >
-                グループ
+                {t.group}
               </button>
               <button
                 className={`cal-view-btn ${progressView === "project" ? "cal-view-btn--active" : ""}`}
                 onClick={() => setProgressView("project")}
               >
-                プロジェクト
+                {t.project}
               </button>
             </div>
             <div className="cal-view-toggle">
@@ -372,13 +374,13 @@ export function DashboardPage() {
                 className={`cal-view-btn ${progressPeriod === "this_week" ? "cal-view-btn--active" : ""}`}
                 onClick={() => setProgressPeriod("this_week")}
               >
-                今週
+                {t.thisWeek}
               </button>
               <button
                 className={`cal-view-btn ${progressPeriod === "this_month" ? "cal-view-btn--active" : ""}`}
                 onClick={() => setProgressPeriod("this_month")}
               >
-                今月
+                {t.thisMonth}
               </button>
             </div>
           </div>
@@ -403,7 +405,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="ws-col-empty">対象タスクなし</div>
+            <div className="ws-col-empty">{t.noTargetTasks}</div>
           )
         ) : (
           groupedProjectProgress.length > 0 ? (
@@ -431,7 +433,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="ws-col-empty">対象タスクなし</div>
+            <div className="ws-col-empty">{t.noTargetTasks}</div>
           )
         )}
       </section>
@@ -455,7 +457,7 @@ export function DashboardPage() {
       {undoEntry && (
         <Toast
           message={undoEntry.message}
-          action={{ label: "元に戻す", onClick: handleUndo }}
+          action={{ label: t.undo, onClick: handleUndo }}
           onDismiss={() => setUndoEntry(null)}
         />
       )}
